@@ -1,0 +1,857 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HTML编辑器</title>
+
+    <!-- CodeMirror 核心依赖 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.63.0/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.63.0/theme/material-darker.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.63.0/codemirror.min.js"></script>
+
+    <!-- 多语言模式支持 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.63.0/mode/htmlmixed/htmlmixed.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.63.0/mode/css/css.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.63.0/mode/javascript/javascript.min.js"></script>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        }
+
+        :root {
+            --bg-color: #1a1f25;
+            --text-color: #ffffff;
+            --secondary-bg: rgba(255,255,255,0.1);
+            --border-color: rgba(255,255,255,0.2);
+            --accent-blue: #4aa3ff;
+            --hover-bg: rgba(74, 163, 255, 0.1);
+            --save-green: rgba(40, 167, 69, 0.65);
+            --highlight-yellow: rgba(255, 215, 0, 0.62);
+            --resizer-color: #ffffff;
+        }
+
+        [data-theme="light"] {
+            --bg-color: #f8f9fa;
+            --text-color: #2d3436;
+            --secondary-bg: rgba(0,0,0,0.04);
+            --border-color: rgba(0,0,0,0.12);
+            --accent-blue: #1971c2;
+            --hover-bg: rgba(25, 113, 194, 0.08);
+            --save-green: rgba(33, 136, 56, 0.65);
+            --highlight-yellow: rgba(255, 215, 0, 0.57);
+            --resizer-color: #ffffff;
+        }
+
+        body {
+            background: var(--bg-color);
+            color: var(--text-color);
+            height: 100vh;
+            display: flex;
+        }
+
+        .container {
+            flex: 1;
+            display: flex;
+            padding: 20px;
+            gap: 10px;
+        }
+
+        /* 侧边栏样式 */
+        .sidebar {
+            width: 240px;
+            background: var(--secondary-bg);
+            border-radius: 12px;
+            padding: 15px;
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .file-list {
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .file-item {
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.2s ease;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: relative;
+        }
+
+        .file-item:hover {
+            background: var(--hover-bg);
+        }
+
+        .file-item.active {
+            background: var(--accent-blue);
+        }
+
+        /* 主编辑器区域 */
+        .main-editor {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            min-width: 400px;
+            max-width: calc(100% - 300px);
+        }
+
+        /* 标签栏样式 */
+        .tabs {
+            display: flex;
+            gap: 8px;
+            padding: 8px;
+            background: var(--secondary-bg);
+            border-radius: 8px;
+            backdrop-filter: blur(10px);
+        }
+
+        .tab {
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+
+        .tab.active {
+            background: var(--accent-blue);
+        }
+
+        /* CodeMirror 定制样式 */
+        .CodeMirror {
+            flex: 1;
+            height: auto !important;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .CodeMirror-gutters {
+            background: var(--secondary-bg);
+            border-right: 1px solid var(--border-color);
+        }
+
+        /* 预览区域 */
+        .preview-container {
+            width: 40%;
+            min-width: 300px;
+            max-width: calc(100% - 400px);
+            background: var(--secondary-bg);
+            border-radius: 12px;
+            padding: 15px;
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--border-color);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            transition: all 0.3s ease;
+        }
+
+        .preview-container.hidden {
+            display: none;
+        }
+
+        .preview-wrapper {
+            flex: 1;
+            border-radius: 8px;
+            overflow: hidden;
+            background: white;
+        }
+
+        #preview {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        /* 拉动条 */
+        .resizer {
+            width: 8px;
+            background: var(--resizer-color);
+            cursor: col-resize;
+            opacity: 0.3;
+            transition: opacity 0.2s;
+            border-radius: 4px;
+        }
+
+        .resizer:hover {
+            opacity: 1;
+        }
+
+        /* 按钮样式 */
+        .button {
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: 1px solid var(--border-color);
+            background: var(--secondary-bg);
+            color: var(--text-color);
+        }
+
+        .button:hover {
+            filter: brightness(1.2);
+        }
+
+        .save-btn {
+            background: var(--save-green);
+            border-color: var(--save-green);
+            color: white;
+        }
+
+        .highlight-btn {
+            background: var(--highlight-yellow);
+            border-color: var(--highlight-yellow);
+            color: #2d3436;
+        }
+
+        .highlight-btn.active {
+            box-shadow: 0 0 8px rgba(255, 215, 0, 0.5);
+        }
+
+        /* 最大化按钮 */
+        .maximize-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 10;
+            padding: 6px 12px;
+            background: var(--secondary-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            color: var(--text-color);
+        }
+
+        .maximize-btn:hover {
+            background: var(--hover-bg);
+        }
+
+        /* 右键菜单 */
+        .context-menu {
+            position: fixed;
+            background: var(--secondary-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 8px 0;
+            min-width: 120px;
+            backdrop-filter: blur(10px);
+            z-index: 1000;
+            display: none;
+        }
+
+        .menu-item {
+            padding: 8px 16px;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+
+        .menu-item:hover {
+            background: var(--hover-bg);
+        }
+
+        /* 全屏样式 */
+        .preview-fullscreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 1000;
+            padding: 20px;
+            background: var(--bg-color);
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+                padding: 12px;
+            }
+
+            .resizer {
+                display: none;
+            }
+
+            .sidebar, .preview-container {
+                width: 100%;
+                height: auto;
+            }
+
+            .preview-container {
+                height: 50vh;
+            }
+
+            .CodeMirror {
+                min-height: 400px;
+            }
+        }
+
+        /* 模态框样式 */
+        .modal {
+            display: none; /* 默认隐藏 */
+            position: fixed; /* 固定定位 */
+            z-index: 1; /* 确保在最上层 */
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto; /* 允许滚动 */
+            background-color: rgba(0,0,0,0.4); /* 黑色背景，带透明度 */
+        }
+
+        .modal-content {
+            background-color: var(--secondary-bg);
+            margin: 15% auto; /* 居中显示，距离顶部15% */
+            padding: 20px;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            width: 60%; /* 可以根据需要调整宽度 */
+            max-width: 500px;
+            backdrop-filter: blur(20px) saturate(180%);
+        }
+
+        .close-button {
+            color: var(--text-color);
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+        .close-button:hover,
+        .close-button:focus {
+            color: white;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .modal h2 {
+            margin-top: 0;
+            margin-bottom: 15px;
+        }
+
+        .modal input[type=text] {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+        }
+
+        .modal-buttons {
+            display: flex;
+            justify-content: flex-end; /* 按钮右对齐 */
+            gap: 10px;
+        }
+
+        .file-type-options {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .file-type-options label {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .file-type-options input[type="radio"] {
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            width: 16px;
+            height: 16px;
+            border: 1px solid var(--border-color);
+            border-radius: 50%;
+            background-color: var(--bg-color);
+            cursor: pointer;
+            position: relative;
+        }
+
+        .file-type-options input[type="radio"]:checked::before {
+            content: '';
+            display: block;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: var(--accent-blue);
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <!-- 左侧边栏 -->
+    <div class="sidebar">
+        <div class="toolbar">
+            <button class="button" id="newBtn">新建</button>
+            <button class="button save-btn" id="saveBtn">保存</button>
+            <button class="button highlight-btn" id="toggleHighlight">高亮</button>
+            <button class="button" id="togglePreview">预览</button>
+            <button class="button" id="downloadBtn">下载</button>
+        </div>
+        <div class="file-list" id="fileList"></div>
+    </div>
+
+    <!-- 主编辑器 -->
+    <div class="main-editor">
+        <div class="tabs">
+            <div class="tab active">HTML</div>
+            <div class="tab">CSS</div>
+            <div class="tab">JS</div>
+        </div>
+        <textarea id="htmlEditor"></textarea>
+        <textarea id="cssEditor"></textarea>
+        <textarea id="jsEditor"></textarea>
+    </div>
+
+    <!-- 拉动条 -->
+    <div class="resizer" id="resizer"></div>
+
+    <!-- 右侧预览 -->
+    <div class="preview-container" id="previewContainer">
+        <button class="maximize-btn" id="maximizeBtn">全屏</button>
+        <div class="preview-wrapper">
+            <iframe id="preview" sandbox="allow-scripts"></iframe>
+        </div>
+    </div>
+
+    <!-- 右键菜单 -->
+    <div class="context-menu" id="contextMenu">
+        <div class="menu-item" onclick="deleteCurrentFile()">删除</div>
+        <div class="menu-item" onclick="openRenameFileDialog()">重命名</div>
+    </div>
+
+    <!-- 新建文件模态框 -->
+    <div id="newFileDialog" class="modal" style="display: none;">
+        <div class="modal-content">
+            <span class="close-button" id="closeNewFileDialog">&times;</span>
+            <h2>新建文件</h2>
+
+            <div class="file-type-options">
+                <label>
+                    <input type="radio" name="fileType" value="html" checked> HTML
+                </label>
+                <label>
+                    <input type="radio" name="fileType" value="css"> CSS
+                </label>
+                <label>
+                    <input type="radio" name="fileType" value="js"> JavaScript
+                </label>
+            </div>
+
+            <input type="text" id="newFileName" placeholder="请输入文件名 (例如: index)">
+            <div class="modal-buttons">
+                <button class="button" id="createNewFileBtn">创建</button>
+                <button class="button" id="cancelNewFileBtn">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 重命名文件模态框 -->
+    <div id="renameFileDialog" class="modal" style="display: none;">
+        <div class="modal-content">
+            <span class="close-button" id="closeRenameFileDialog">&times;</span>
+            <h2>重命名文件</h2>
+            <input type="text" id="renameFileName" placeholder="请输入新文件名">
+            <div class="modal-buttons">
+                <button class="button" id="renameFileBtn">重命名</button>
+                <button class="button" id="cancelRenameFileBtn">取消</button>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    // 文件管理相关
+    let files = JSON.parse(localStorage.getItem('editorFiles')) || [];
+    let currentFile = null;
+    let highlightEnabled = localStorage.getItem('highlightEnabled') === 'true' || true;
+    let previewVisible = localStorage.getItem('previewVisible') !== 'false';
+
+    // 初始化编辑器
+    const htmlEditor = CodeMirror.fromTextArea(document.getElementById('htmlEditor'), {
+        mode: highlightEnabled ? 'htmlmixed' : 'text/plain',
+        theme: 'material-darker',
+        lineNumbers: true,
+        autoCloseTags: false,
+        electricChars: false
+    });
+
+    const cssEditor = CodeMirror.fromTextArea(document.getElementById('cssEditor'), {
+        mode: highlightEnabled ? 'css' : 'text/plain',
+        theme: 'material-darker',
+        lineNumbers: true
+    });
+
+    const jsEditor = CodeMirror.fromTextArea(document.getElementById('jsEditor'), {
+        mode: highlightEnabled ? 'javascript' : 'text/plain',
+        theme: 'material-darker',
+        lineNumbers: true
+    });
+
+    // 修复高亮功能
+    function toggleHighlight() {
+        console.log('toggleHighlight 函数被调用');
+        highlightEnabled = !highlightEnabled;
+        localStorage.setItem('highlightEnabled', highlightEnabled);
+
+        const modes = {
+            html: highlightEnabled ? 'htmlmixed' : 'text/plain',
+            css: highlightEnabled ? 'css' : 'text/plain',
+            js: highlightEnabled ? 'javascript' : 'text/plain'
+        };
+
+        htmlEditor.setOption('mode', modes.html);
+        console.log('htmlEditor mode 设置为:', modes.html);
+        cssEditor.setOption('mode', modes.css);
+        console.log('cssEditor mode 设置为:', modes.css);
+        jsEditor.setOption('mode', modes.js);
+        console.log('jsEditor mode 设置为:', modes.js);
+
+        document.getElementById('toggleHighlight').classList.toggle('active', highlightEnabled);
+    }
+
+    // 切换预览窗口
+    function togglePreview() {
+        previewVisible = !previewVisible;
+        localStorage.setItem('previewVisible', previewVisible);
+        document.getElementById('previewContainer').classList.toggle('hidden', !previewVisible);
+        document.getElementById('togglePreview').textContent = previewVisible ? '预览' : '显示预览';
+    }
+
+    // 初始化视图状态
+    document.getElementById('toggleHighlight').classList.toggle('active', highlightEnabled);
+    document.getElementById('previewContainer').classList.toggle('hidden', !previewVisible);
+    document.getElementById('togglePreview').textContent = previewVisible ? '预览' : '显示预览';
+
+    // 初始化文件列表
+    function initFileList() {
+        const fileList = document.getElementById('fileList');
+        fileList.innerHTML = files.map(file => `
+            <div class="file-item ${file.id === currentFile?.id ? 'active' : ''}"
+                 data-id="${file.id}"
+                 oncontextmenu="showContextMenu(event, '${file.id}')"
+                 onclick="loadFile('${file.id}')">
+                <span>${file.name}</span>
+            </div>
+        `).join('');
+    }
+
+    // 获取新建文件模态框元素
+    const newFileDialog = document.getElementById('newFileDialog');
+    const newFileBtn = document.getElementById('newBtn');
+    const closeNewFileDialogBtn = document.getElementById('closeNewFileDialog');
+    const createNewFileBtn = document.getElementById('createNewFileBtn');
+    const cancelNewFileBtn = document.getElementById('cancelNewFileBtn');
+    const newFileNameInput = document.getElementById('newFileName');
+
+    // 点击 "新建" 按钮显示模态框
+    newFileBtn.addEventListener('click', () => {
+        newFileDialog.style.display = "block";
+        newFileNameInput.value = ""; // 清空输入框
+        newFileNameInput.focus();     // 聚焦到输入框
+    });
+
+    // 点击关闭按钮 (×) 关闭模态框
+    closeNewFileDialogBtn.addEventListener('click', () => {
+        newFileDialog.style.display = "none";
+    });
+
+    // 点击模态框外部区域也关闭模态框
+    window.addEventListener('click', (event) => {
+        if (event.target == newFileDialog) {
+            newFileDialog.style.display = "none";
+        }
+    });
+
+    // 点击 "取消" 按钮关闭模态框
+    cancelNewFileBtn.addEventListener('click', () => {
+        newFileDialog.style.display = "none";
+    });
+
+    // 点击 "创建" 按钮创建新文件
+    createNewFileBtn.addEventListener('click', () => {
+        const fileName = newFileNameInput.value.trim();
+        if (!fileName) {
+            alert('文件名不能为空！');
+            return;
+        }
+
+        const fileType = document.querySelector('input[name="fileType"]:checked').value;
+        const fileExtension = fileType === 'css' ? 'css' : fileType === 'js' ? 'js' : 'html';
+        const fullFileName = `${fileName}.${fileExtension}`;
+
+        const newFile = {
+            id: Date.now().toString(),
+            name: fullFileName,
+            html: '',
+            css: '',
+            js: '',
+            timestamp: new Date().toISOString()
+        };
+
+        files.push(newFile);
+        currentFile = newFile;
+        localStorage.setItem('editorFiles', JSON.stringify(files));
+        initFileList();
+        loadFile(newFile.id);
+        newFileDialog.style.display = "none"; // 关闭模态框
+    });
+
+    // 保存文件
+    document.getElementById('saveBtn').addEventListener('click', () => {
+        if (!currentFile) return alert('请先选择或新建文件！');
+
+        currentFile.html = htmlEditor.getValue();
+        currentFile.css = cssEditor.getValue();
+        currentFile.js = jsEditor.getValue();
+        currentFile.timestamp = new Date().toISOString();
+
+        localStorage.setItem('editorFiles', JSON.stringify(files));
+        initFileList();
+        alert('保存成功！');
+    });
+
+    // 加载文件
+    window.loadFile = function(id) {
+        currentFile = files.find(f => f.id === id);
+        htmlEditor.setValue(currentFile.html);
+        cssEditor.setValue(currentFile.css);
+        jsEditor.setValue(currentFile.js);
+        initFileList();
+        updatePreview();
+    }
+
+    // 下载文件
+    document.getElementById('downloadBtn').addEventListener('click', () => {
+        if (!currentFile) return alert('请先保存文件！');
+
+        const content = `
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>${currentFile.css}</style>
+</head>
+<body>
+${currentFile.html}
+<script>${currentFile.js}<\/script>
+</body>
+</html>
+        `;
+
+        const blob = new Blob([content], { type: 'text/html' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = currentFile.name.endsWith('.html') ? currentFile.name : `${currentFile.name}.html`;
+        a.click();
+        URL.revokeObjectURL(url);
+    });
+
+    // 右键菜单
+    let contextMenuFileId = null;
+
+    window.showContextMenu = function(e, fileId) {
+        e.preventDefault();
+        contextMenuFileId = fileId;
+        const menu = document.getElementById('contextMenu');
+        menu.style.display = 'block';
+        menu.style.left = `${e.clientX}px`;
+        menu.style.top = `${e.clientY}px`;
+    }
+
+    window.deleteCurrentFile = function() {
+        if (!contextMenuFileId) return;
+
+        files = files.filter(f => f.id !== contextMenuFileId);
+        if (currentFile?.id === contextMenuFileId) {
+            currentFile = null;
+            htmlEditor.setValue('');
+            cssEditor.setValue('');
+            jsEditor.setValue('');
+        }
+        localStorage.setItem('editorFiles', JSON.stringify(files));
+        initFileList();
+        document.getElementById('contextMenu').style.display = 'none';
+    }
+
+    // 关闭右键菜单
+    document.addEventListener('click', () => {
+        document.getElementById('contextMenu').style.display = 'none';
+    });
+
+    // 实时预览
+    const preview = document.getElementById('preview');
+    let updateTimeout;
+
+    function updatePreview() {
+        clearTimeout(updateTimeout);
+        updateTimeout = setTimeout(() => {
+            const html = `
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <style>${cssEditor.getValue()}</style>
+                </head>
+                <body>
+                    ${htmlEditor.getValue()}
+                    <script>${jsEditor.getValue()}<\/script>
+                </body>
+                </html>
+            `;
+            preview.srcdoc = html;
+        }, 500);
+    }
+
+    // 监听编辑器变化
+    htmlEditor.on('change', updatePreview);
+    cssEditor.on('change', updatePreview);
+    jsEditor.on('change', updatePreview);
+    // 拉动条功能（已修复）
+    const resizer = document.getElementById('resizer');
+    let isResizing = false;
+
+    resizer.addEventListener('mousedown', startResize);
+    document.addEventListener('mousemove', resize);
+    document.addEventListener('mouseup', stopResize);
+
+    function startResize(e) {
+        isResizing = true;
+        document.body.style.cursor = 'col-resize';
+    }
+
+    function resize(e) {
+        if (!isResizing) return;
+
+        const container = document.querySelector('.container');
+        const mainEditor = document.querySelector('.main-editor');
+        const previewContainer = document.querySelector('.preview-container');
+
+        const containerRect = container.getBoundingClientRect();
+        const totalWidth = containerRect.width - 40; // 减去padding
+        const newMainWidth = e.clientX - containerRect.left - 20;
+        const newPreviewWidth = totalWidth - newMainWidth - 20;
+
+        mainEditor.style.width = `clamp(300px, ${newMainWidth}px, 80%)`;
+        previewContainer.style.width = `clamp(300px, ${newPreviewWidth}px, 80%)`;
+    }
+
+    function stopResize() {
+        isResizing = false;
+        document.body.style.cursor = 'default';
+    }
+
+    // 全屏功能
+    const previewContainer = document.getElementById('previewContainer');
+    const maximizeBtn = document.getElementById('maximizeBtn');
+    let isFullscreen = false;
+
+    function toggleFullscreen() {
+        isFullscreen = !isFullscreen;
+
+        if (isFullscreen) {
+            previewContainer.classList.add('preview-fullscreen');
+            maximizeBtn.textContent = '退出全屏';
+            if (previewContainer.requestFullscreen) {
+                previewContainer.requestFullscreen();
+            }
+        } else {
+            previewContainer.classList.remove('preview-fullscreen');
+            maximizeBtn.textContent = '全屏';
+            if (document.exitFullscreen) {
+                document.exitFullscreen();
+            }
+        }
+    }
+
+    document.addEventListener('fullscreenchange', () => {
+        isFullscreen = !!document.fullscreenElement;
+        previewContainer.classList.toggle('preview-fullscreen', isFullscreen);
+        maximizeBtn.textContent = isFullscreen ? '退出全屏' : '全屏';
+    });
+
+    maximizeBtn.addEventListener('click', toggleFullscreen);
+
+    // 事件监听
+    document.getElementById('toggleHighlight').addEventListener('click', toggleHighlight);
+    document.getElementById('togglePreview').addEventListener('click', togglePreview);
+
+    // 获取重命名文件模态框元素
+    const renameFileDialog = document.getElementById('renameFileDialog');
+    const closeRenameFileDialogBtn = document.getElementById('closeRenameFileDialog');
+    const renameFileBtn = document.getElementById('renameFileBtn');
+    const cancelRenameFileBtn = document.getElementById('cancelRenameFileBtn');
+    const renameFileNameInput = document.getElementById('renameFileName');
+
+    // 打开重命名文件模态框函数
+    window.openRenameFileDialog = function() {
+        renameFileDialog.style.display = "block";
+        renameFileNameInput.value = currentFile.name.replace(/\.(html|css|js)$/, ''); // 默认显示文件名，不带后缀
+        renameFileNameInput.focus();
+    }
+
+    // 关闭重命名文件模态框
+    closeRenameFileDialogBtn.addEventListener('click', () => {
+        renameFileDialog.style.display = "none";
+    });
+    cancelRenameFileBtn.addEventListener('click', () => {
+        renameFileDialog.style.display = "none";
+    });
+    window.addEventListener('click', (event) => {
+        if (event.target == renameFileDialog) {
+            renameFileDialog.style.display = "none";
+        }
+    });
+
+    // 重命名文件按钮事件监听器
+    renameFileBtn.addEventListener('click', () => {
+        console.log('重命名按钮被点击了');
+        const newFileName = renameFileNameInput.value.trim();
+        if (!newFileName) {
+            alert('文件名不能为空！');
+            return;
+        }
+
+        const fileExtensionMatch = currentFile.name.match(/\.(html|css|js)$/);
+        const fileExtension = fileExtensionMatch ? fileExtensionMatch[0] : ''; // 保留原文件后缀名
+        const fullNewFileName = `${newFileName}${fileExtension}`;
+
+        currentFile.name = fullNewFileName;
+        console.log('currentFile.name 更新为:', currentFile.name);
+        localStorage.setItem('editorFiles', JSON.stringify(files));
+        console.log('文件列表已保存到 localStorage');
+        initFileList();
+        console.log('文件列表已重新渲染');
+        renameFileDialog.style.display = "none";
+    });
+
+    // 初始化
+    if (files.length > 0) {
+        currentFile = files[0];
+        loadFile(currentFile.id);
+    }
+    initFileList();
+</script>
+</body>
+</html>

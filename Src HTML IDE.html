@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>多语言代码编辑器（HTML/CSS/JS）</title>
+
+    <!-- CodeMirror 核心依赖 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.63.0/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.63.0/theme/material-darker.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.63.0/codemirror.min.js"></script>
+
+    <!-- 多语言模式支持 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.63.0/mode/htmlmixed/htmlmixed.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.63.0/mode/css/css.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.63.0/mode/javascript/javascript.min.js"></script>
+
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; }
+
+        .container {
+            display: flex;
+            height: 100vh;
+        }
+
+        /* 左侧编辑器区域 */
+        .editor-container {
+            width: 60%;
+            background: #1e1e1e;
+            padding: 10px;
+        }
+
+        /* 标签切换 */
+        .tabs {
+            display: flex;
+            margin-bottom: 10px;
+        }
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            background: #333;
+            color: #fff;
+            border: none;
+            outline: none;
+        }
+        .tab.active {
+            background: #666;
+        }
+
+        /* CodeMirror 编辑器高度 */
+        .CodeMirror {
+            height: calc(100vh - 80px) !important;
+            font-size: 14px;
+        }
+
+        /* 右侧预览区域 */
+        .preview-container {
+            width: 40%;
+            border-left: 2px solid #444;
+        }
+        #preview {
+            width: 100%;
+            height: 100vh;
+            border: none;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <!-- 左侧编辑器 -->
+    <div class="editor-container">
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('html')">HTML</button>
+            <button class="tab" onclick="switchTab('css')">CSS</button>
+            <button class="tab" onclick="switchTab('js')">JavaScript</button>
+        </div>
+        <textarea id="htmlEditor"></textarea>
+        <textarea id="cssEditor"></textarea>
+        <textarea id="jsEditor"></textarea>
+    </div>
+
+    <!-- 右侧预览 -->
+    <div class="preview-container">
+        <iframe id="preview" sandbox="allow-scripts"></iframe>
+    </div>
+</div>
+
+<script>
+    // 初始化三个 CodeMirror 编辑器
+    const htmlEditor = CodeMirror.fromTextArea(document.getElementById('htmlEditor'), {
+        mode: 'htmlmixed',
+        theme: 'material-darker',
+        lineNumbers: true,
+        autoCloseTags: true
+    });
+
+    const cssEditor = CodeMirror.fromTextArea(document.getElementById('cssEditor'), {
+        mode: 'css',
+        theme: 'material-darker',
+        lineNumbers: true
+    });
+
+    const jsEditor = CodeMirror.fromTextArea(document.getElementById('jsEditor'), {
+        mode: 'javascript',
+        theme: 'material-darker',
+        lineNumbers: true
+    });
+
+    // 默认只显示 HTML 编辑器
+    document.getElementById('cssEditor').style.display = 'none';
+    document.getElementById('jsEditor').style.display = 'none';
+
+    // 标签切换函数
+    function switchTab(lang) {
+        document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+        document.querySelector(`[onclick="switchTab('${lang}')"]`).classList.add('active');
+
+        document.getElementById('htmlEditor').style.display = lang === 'html' ? 'block' : 'none';
+        document.getElementById('cssEditor').style.display = lang === 'css' ? 'block' : 'none';
+        document.getElementById('jsEditor').style.display = lang === 'js' ? 'block' : 'none';
+
+        // 刷新编辑器尺寸
+        setTimeout(() => {
+            htmlEditor.refresh();
+            cssEditor.refresh();
+            jsEditor.refresh();
+        }, 0);
+    }
+
+    // 生成完整 HTML
+    function generateFullHTML() {
+        return `
+<!DOCTYPE html>
+<html>
+<head>
+    <style>${cssEditor.getValue()}</style>
+</head>
+<body>
+    ${htmlEditor.getValue()}
+    <script>${jsEditor.getValue()}<\/script>
+</body>
+</html>
+            `;
+    }
+
+    // 防抖更新预览
+    let updateTimeout;
+    function updatePreview() {
+        clearTimeout(updateTimeout);
+        updateTimeout = setTimeout(() => {
+            document.getElementById('preview').srcdoc = generateFullHTML();
+        }, 500);
+    }
+
+    // 监听所有编辑器的变化
+    htmlEditor.on('change', updatePreview);
+    cssEditor.on('change', updatePreview);
+    jsEditor.on('change', updatePreview);
+
+    // 初始化示例代码
+    htmlEditor.setValue('<h1 style="color: blue">Hello World!</h1>');
+    cssEditor.setValue('body { background: #f0f0f0; }');
+    jsEditor.setValue('console.log("Loaded!");');
+    updatePreview();
+</script>
+</body>
+</html>

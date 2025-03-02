@@ -1,0 +1,1154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neon Login</title>
+    <style>
+        :root {
+            /* 深色模式颜色 */
+            --primary: #6366f1;
+            --primary-hover: #4f46e5;
+            --primary-shadow: rgba(99, 102, 241, 0.4);
+            --background: #0f172a;
+            --surface: #1e293b;
+            --text: #f8fafc;
+            --border: #334155;
+            --error: #f87171;
+            --success: #4ade80;
+            --icon-stroke: #94a3b8;
+            --text-primary: #f8fafc; /* 深色模式文字颜色 */
+            --text-secondary: #94a3b8;
+        }
+
+        .light-mode {
+            /* 浅色模式颜色 */
+            --primary: #4f46e5;
+            --primary-hover: #4338ca;
+            --primary-shadow: rgba(79, 70, 229, 0.2);
+            --background: #f8fafc;
+            --surface: #ffffff;
+            --text: #0f172a;
+            --border: #e2e8f0;
+            --error: #dc2626;
+            --success: #16a34a;
+            --icon-stroke: #64748b;
+            --text-primary: #0f172a; /* 浅色模式文字颜色 */
+            --text-secondary: #64748b;
+
+            /* 浅色模式特有调整 */
+            background-image: 
+                radial-gradient(at 75% 25%, rgba(79, 70, 229, 0.05) 0%, transparent 60%),
+                radial-gradient(at 25% 75%, rgba(79, 70, 229, 0.05) 0%, transparent 60%);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+        }
+
+        body {
+            min-height: 100vh;
+            display: grid;
+            place-items: center;
+            background: var(--background);
+            color: var(--text-primary);
+        }
+
+        .login-container {
+            background: var(--surface);
+            width: 90%;
+            max-width: 400px;
+            padding: 2.5rem;
+            border-radius: 1.5rem;
+            box-shadow: 
+                0 0 60px rgba(99, 102, 241, 0.1),
+                0 24px 48px -16px rgba(0, 0, 0, 0.4);
+            transform: translateY(0);
+            transition: transform 0.3s ease;
+            border: 1px solid var(--border);
+            perspective: 1000px;
+            transform-style: preserve-3d;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .login-container:hover {
+            transform: translateY(-4px);
+        }
+
+        .login-header {
+            text-align: center;
+            margin-bottom: 2.5rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .login-header h1 {
+            font-size: 1.875rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(45deg, #818cf8, #6366f1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            color: var(--text-primary);
+            transition: color 0.3s ease;
+        }
+
+        .login-header p {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            transition: color 0.3s ease;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+            position: relative;
+            transition: transform 0.4s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+            transform-style: preserve-3d;
+            will-change: transform;
+            position: relative;
+            z-index: 1;
+        }
+
+        .input-wrapper {
+            position: relative;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 0.75rem;
+            transition: all 0.3s ease;
+            border: 1px solid var(--border);
+        }
+
+        .input-wrapper:focus-within {
+            border-color: var(--primary);
+            box-shadow: 0 8px 32px rgba(99, 102, 241, 0.2);
+            transform: 
+                rotateX(2deg) 
+                translateZ(8px);
+        }
+
+        .input-icon {
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--icon-stroke);
+            width: 1.25rem;
+            height: 1.25rem;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 0.875rem 1rem 0.875rem 3rem;
+            background: transparent;
+            border: none;
+            color: var(--text);
+            font-size: 0.875rem;
+            border-radius: 0.75rem;
+        }
+
+        .form-input::placeholder {
+            color: #64748b;
+        }
+
+        .login-button {
+            width: 100%;
+            padding: 1rem;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.4s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+            transform-style: preserve-3d;
+            will-change: transform;
+        }
+
+        .login-button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 200%;
+            height: 100%;
+            background: linear-gradient(
+                120deg,
+                transparent,
+                rgba(255, 255, 255, 0.15),
+                transparent
+            );
+            transition: left 0.6s;
+        }
+
+        .login-button:hover::before {
+            left: 100%;
+        }
+
+        .login-button:hover {
+            background: var(--primary-hover);
+            box-shadow: 0 8px 24px -8px var(--primary-shadow);
+            transform: 
+                rotateX(5deg) 
+                rotateY(-2deg) 
+                translateZ(15px);
+        }
+
+        .switch-form {
+            text-align: center;
+            margin-top: 1.5rem;
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            transition: transform 0.4s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+            transform-style: preserve-3d;
+            will-change: transform;
+        }
+
+        .switch-form a {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+
+        .switch-form a:hover {
+            color: var(--primary-hover);
+        }
+
+        .error-message {
+            color: var(--error);
+            font-size: 0.875rem;
+            margin-top: 1rem;
+            text-align: center;
+            display: none;
+        }
+
+        /* 保留原有主题切换功能 */
+        .theme-toggle {
+            position: fixed;
+            top: 2rem;
+            right: 2rem;
+            background: var(--surface);
+            width: 3rem;
+            height: 3rem;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            border: 1px solid var(--border);
+            transition: all 0.3s ease;
+        }
+
+        .theme-toggle:hover {
+            transform: rotate(15deg);
+        }
+
+        .theme-toggle svg {
+            width: 1.5rem;
+            height: 1.5rem;
+            color: var(--text);
+        }
+
+        .password-strength {
+            margin-top: 0.5rem;
+            font-size: 0.75rem;
+            display: flex;
+            gap: 0.5rem;
+            color: #64748b;
+        }
+
+        .password-strength span {
+            flex: 1;
+            height: 4px;
+            background: #334155;
+            border-radius: 2px;
+            transition: all 0.3s ease;
+        }
+
+        .password-strength span.active {
+            background: var(--primary);
+        }
+
+        /* 调整需要适配浅色模式的组件 */
+        .light-mode {
+            .login-container {
+                box-shadow: 
+                    0 0 60px rgba(99, 102, 241, 0.05),
+                    0 24px 48px -16px rgba(0, 0, 0, 0.1);
+                border: 1px solid var(--border);
+            }
+
+            .input-wrapper {
+                background: rgba(15, 23, 42, 0.03);
+                border: 1px solid var(--border);
+                
+                &:focus-within {
+                    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+                }
+            }
+
+            .switch-form {
+                color: #64748b;
+                
+                a:hover {
+                    color: var(--primary-hover);
+                }
+            }
+
+            .password-strength span {
+                background: #e2e8f0;
+                
+                &.active {
+                    background: var(--primary);
+                }
+            }
+
+            .theme-toggle {
+                background: var(--surface);
+                border: 1px solid var(--border);
+                box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+                
+                svg {
+                    color: var(--text);
+                }
+            }
+
+            .login-button::after {
+                background: linear-gradient(
+                    120deg,
+                    rgba(255, 255, 255, 0.3) 25%,
+                    transparent 50%,
+                    rgba(255, 255, 255, 0.3) 75%
+                );
+            }
+        }
+
+        /* 通用调整 */
+        .theme-toggle {
+            background: var(--surface);
+            border: 1px solid var(--border);
+        }
+
+        .input-icon {
+            color: var(--icon-stroke);
+        }
+
+        .error-message {
+            color: var(--error);
+        }
+
+        .success-message {
+            color: var(--success);
+        }
+
+        /* 添加图标切换样式 */
+        .theme-icon {
+            width: 24px;
+            height: 24px;
+            transition: opacity 0.3s ease;
+        }
+
+        .sun {
+            display: block;
+            color: #f59e0b; /* 太阳颜色 */
+        }
+
+        .moon {
+            display: none;
+            color: #4f46e5; /* 月亮颜色 */
+        }
+
+        .light-mode .sun {
+            display: none;
+        }
+
+        .light-mode .moon {
+            display: block;
+        }
+
+        /* 优化按钮悬停效果 */
+        .theme-toggle:hover .sun {
+            color: #d97706;
+        }
+
+        .light-mode .theme-toggle:hover .moon {
+            color: #4338ca;
+        }
+
+        /* 添加新按钮样式 */
+        .style-toggle,
+        .color-toggle {
+            position: fixed;
+            top: 2rem;
+            right: 6rem; /* 调整位置 */
+            width: 3rem;
+            height: 3rem;
+            border-radius: 50%;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .color-toggle {
+            right: 9.5rem;
+        }
+
+        .style-toggle:hover,
+        .color-toggle:hover {
+            transform: scale(1.1);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        /* 颜色选择面板 */
+        .color-palette {
+            position: fixed;
+            top: 6rem;
+            right: 2rem;
+            background: var(--surface);
+            padding: 1rem;
+            border-radius: 1rem;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+            display: none;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.5rem;
+        }
+
+        .color-option {
+            width: 2.5rem;
+            height: 2.5rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .color-option:hover {
+            transform: scale(1.1);
+        }
+
+        /* 预设颜色方案 */
+        [data-color="default"] { background: #6366f1; }
+        [data-color="sunset"] { background: #f59e0b; }
+        [data-color="forest"] { background: #10b981; }
+        [data-color="ocean"] { background: #0ea5e9; }
+        [data-color="violet"] { background: #8b5cf6; }
+        [data-color="rose"] { background: #f43f5e; }
+
+        /* 风格切换样式 */
+        .style-glass {
+            background: rgba(255, 255, 255, 0.1) !important;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .style-minimal {
+            box-shadow: none !important;
+            border: 1px solid var(--border) !important;
+        }
+
+        .style-neomorphic {
+            box-shadow: 8px 8px 16px rgba(0, 0, 0, 0.1),
+                       -8px -8px 16px rgba(255, 255, 255, 0.05) !important;
+        }
+
+        /* 风格选择面板样式 */
+        .style-panel {
+            position: fixed;
+            top: 6rem;
+            right: 2rem;
+            background: var(--surface);
+            padding: 1rem;
+            border-radius: 1rem;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+            display: none;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+            width: 240px;
+            z-index: 1000;
+        }
+
+        .style-option {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 0.5rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .style-option:hover {
+            background: var(--hover-color);
+        }
+
+        .style-preview {
+            width: 80px;
+            height: 60px;
+            border-radius: 0.5rem;
+            margin-bottom: 0.5rem;
+            border: 1px solid var(--border);
+        }
+
+        /* 预览样式 */
+        .default-style {
+            background: var(--surface);
+            box-shadow: 0 0 60px rgba(99, 102, 241, 0.1);
+        }
+
+        .glass-style {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .minimal-style {
+            background: var(--surface);
+            border: 1px solid var(--border);
+        }
+
+        .neomorphic-style {
+            background: var(--surface);
+            box-shadow: 5px 5px 10px rgba(0, 0, 0, 0.1),
+                       -5px -5px 10px rgba(255, 255, 255, 0.05);
+        }
+
+        /* 修改风格切换按钮样式 */
+        .style-toggle {
+            right: 6rem;
+            z-index: 1001; /* 确保按钮在面板上方 */
+        }
+
+        /* 添加缺失的样式类 */
+        .login-container.glass {
+            background: rgba(255, 255, 255, 0.1) !important;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .login-container.minimal {
+            box-shadow: none !important;
+            border: 1px solid var(--border) !important;
+        }
+
+        .login-container.neomorphic {
+            box-shadow: 8px 8px 16px rgba(0, 0, 0, 0.1),
+                      -8px -8px 16px rgba(255, 255, 255, 0.05) !important;
+        }
+
+        /* 修改按钮背景使用CSS变量 */
+        .style-toggle,
+        .color-toggle,
+        .theme-toggle {
+            background: var(--surface) !important;
+            border: 1px solid var(--border) !important;
+        }
+
+        /* 更新颜色方案定义 */
+        const colorSchemes = {
+            default: { 
+                primary: '#6366f1', 
+                background: '#0f172a',
+                surface: '#1e293b',
+                border: '#334155',
+                textPrimary: '#f8fafc',
+                textSecondary: '#94a3b8',
+                primaryHover: '#4f46e5',
+                primaryShadow: 'rgba(99, 102, 241, 0.4)'
+            },
+            sunset: { 
+                primary: '#f59e0b',
+                background: '#1a0f00',
+                surface: '#2c1905',
+                border: '#4a2e0a',
+                textPrimary: '#ffedd5',
+                textSecondary: '#fed7aa',
+                primaryHover: '#d97706',
+                primaryShadow: 'rgba(245, 158, 11, 0.4)'
+            },
+            forest: { 
+                primary: '#10b981',
+                background: '#071f14',
+                surface: '#0d3526',
+                border: '#1a4d38',
+                textPrimary: '#d1fae5',
+                textSecondary: '#a7f3d0',
+                primaryHover: '#08915b',
+                primaryShadow: 'rgba(26, 159, 91, 0.4)'
+            },
+            ocean: { 
+                primary: '#0ea5e9',
+                background: '#00141f',
+                surface: '#00283d',
+                border: '#004b6e',
+                textPrimary: '#e0f2fe',
+                textSecondary: '#bae6fd',
+                primaryHover: '#0080c1',
+                primaryShadow: 'rgba(12, 128, 193, 0.4)'
+            },
+            violet: { 
+                primary: '#8b5cf6',
+                background: '#140a33',
+                surface: '#2d1a66',
+                border: '#4a2d99',
+                textPrimary: '#ede9fe',
+                textSecondary: '#ddd6fe',
+                primaryHover: '#7a46e5',
+                primaryShadow: 'rgba(122, 70, 229, 0.4)'
+            },
+            rose: { 
+                primary: '#f43f5e',
+                background: '#28000a',
+                surface: '#4d0a1a',
+                border: '#801a2d',
+                textPrimary: '#ffe4e6',
+                textSecondary: '#fecdd3',
+                primaryHover: '#e52d50',
+                primaryShadow: 'rgba(229, 45, 80, 0.4)'
+            }
+        };
+
+        /* 优化图标样式 */
+        .style-toggle svg,
+        .color-toggle svg {
+            width: 1.4rem;
+            height: 1.4rem;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        /* 添加图标动画 */
+        .style-toggle:hover svg {
+            animation: iconBounce 0.6s ease;
+        }
+
+        .color-toggle:hover svg {
+            animation: iconSpin 0.8s ease;
+        }
+
+        @keyframes iconBounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-2px); }
+        }
+
+        @keyframes iconSpin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* 调整按钮间距 */
+        .style-toggle {
+            right: 6.5rem;
+        }
+
+        .color-toggle {
+            right: 10rem;
+        }
+
+        /* 为所有交互元素添加3D效果 */
+        .form-group,
+        .login-button,
+        .switch-form {
+            transition: transform 0.4s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+            transform-style: preserve-3d;
+            will-change: transform;
+        }
+
+        /* 动态3D翘起效果 */
+        .form-group:hover {
+            transform: 
+                rotateX(3deg) 
+                rotateY(-1deg) 
+                translateZ(10px);
+        }
+
+        .login-button:hover {
+            transform: 
+                rotateX(5deg) 
+                rotateY(-2deg) 
+                translateZ(15px);
+        }
+
+        .switch-form:hover {
+            transform: 
+                rotateX(2deg) 
+                translateZ(5px);
+        }
+
+        /* 输入框聚焦效果增强 */
+        .input-wrapper:focus-within {
+            transform: 
+                rotateX(2deg) 
+                translateZ(8px);
+            box-shadow: 0 8px 32px rgba(99, 102, 241, 0.2);
+        }
+
+        /* 移动端优化 */
+        @media (hover: none) {
+            .form-group,
+            .login-button,
+            .switch-form {
+                transform: none !important;
+            }
+        }
+
+        /* 光晕层 */
+        .login-container::after {
+            content: '';
+            position: absolute;
+            width: 200px;
+            height: 200px;
+            background: radial-gradient(
+                circle closest-side,
+                rgba(99, 102, 241, 0.15),
+                transparent 60%
+            );
+            pointer-events: none;
+            opacity: 0;
+            transform: translate(-50%, -50%) scale(0);
+            transition: opacity 0.3s, transform 0.6s ease-out;
+            animation: ripple 2s infinite;
+            z-index: 0;
+        }
+
+        /* 光晕动画 */
+        @keyframes ripple {
+            0% { opacity: 0.4; }
+            50% { transform: translate(-50%, -50%) scale(2); opacity: 0.2; }
+            100% { transform: translate(-50%, -50%) scale(3); opacity: 0; }
+        }
+
+        /* 激活状态 */
+        .login-container.active-glow::after {
+            opacity: 0.4;
+            transform: translate(-50%, -50%) scale(1);
+        }
+
+        /* 提升内容层级 */
+        .login-header,
+        .form-group,
+        .login-button {
+            position: relative;
+            z-index: 1;
+        }
+    </style>
+</head>
+<body>
+    <button class="theme-toggle" onclick="toggleTheme()">
+        <!-- 太阳图标（深色模式显示） -->
+        <svg class="theme-icon sun" viewBox="0 0 24 24" fill="none">
+            <path d="M12 3V5M18.36 5.64L16.95 7.05M21 12H19M5 12H3M16.95 16.95L18.36 18.36M12 19V21M7.05 16.95L5.64 18.36M15 12C15 13.6569 13.6569 15 12 15C10.3431 15 9 13.6569 9 12C9 10.3431 10.3431 9 12 9C13.6569 9 15 10.3431 15 12Z" 
+                  stroke="currentColor" 
+                  stroke-width="2" 
+                  stroke-linecap="round" 
+                  stroke-linejoin="round"/>
+        </svg>
+        
+        <!-- 月亮图标（浅色模式显示） -->
+        <svg class="theme-icon moon" viewBox="0 0 24 24" fill="none">
+            <path d="M20.354 15.354C19.317 15.774 18.185 16 17 16C12.029 16 8 11.971 8 7C8 5.815 8.226 4.683 8.646 3.646C5.335 4.994 3 8.207 3 12C3 16.971 7.029 21 12 21C15.793 21 19.006 18.665 20.354 15.354Z" 
+                  stroke="currentColor" 
+                  stroke-width="2" 
+                  stroke-linecap="round" 
+                  stroke-linejoin="round"/>
+        </svg>
+    </button>
+
+    <button class="style-toggle" onclick="toggleStylePanel()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M3 16l4-4-4-4M12 18h7m-13-4h7m4-8h3M3 6h3m13 4h3M3 12h3m13 4h3"/>
+        </svg>
+    </button>
+
+    <button class="color-toggle" onclick="showColorPalette()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z"/>
+            <path d="M12 16c1.7 0 3-1.3 3-3s-1.3-3-3-3-3 1.3-3 3 1.3 3 3 3z"/>
+        </svg>
+    </button>
+
+    <div class="login-container">
+        <div class="login-header">
+            <h1>Welcome to IDE</h1>
+            <p>Sign in to continue your coding journey</p>
+        </div>
+
+        <form id="loginForm">
+            <div class="form-group">
+                <div class="input-wrapper">
+                    <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                    <input type="text" id="username" class="form-input" placeholder="Username" required>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <div class="input-wrapper">
+                    <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                    </svg>
+                    <input type="password" id="password" class="form-input" placeholder="Password" required>
+                </div>
+            </div>
+
+            <button type="submit" class="login-button">Sign In</button>
+            <div class="error-message" id="loginErrorMessage"></div>
+
+            <div class="switch-form">
+                New user? 
+                <a href="#" onclick="switchForm('signup')">Create account</a>
+            </div>
+        </form>
+
+        <!-- 注册表单 -->
+        <form id="signupForm" style="display: none;">
+            <div class="login-header">
+                <h1>Create Account</h1>
+                <p>Start your coding journey</p>
+            </div>
+
+            <div class="form-group">
+                <div class="input-wrapper">
+                    <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                    </svg>
+                    <input type="email" id="email" class="form-input" placeholder="Email" required>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <div class="input-wrapper">
+                    <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                    </svg>
+                    <input type="text" id="newUsername" class="form-input" placeholder="Username" required>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <div class="input-wrapper">
+                    <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                    </svg>
+                    <input type="password" id="newPassword" class="form-input" placeholder="Password" required>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <div class="input-wrapper">
+                    <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    <input type="password" id="confirmPassword" class="form-input" placeholder="Confirm Password" required>
+                </div>
+            </div>
+
+            <button type="submit" class="login-button">Sign Up</button>
+            <div class="switch-form">
+                Already have an account? 
+                <a href="#" onclick="switchForm('login')">Login here</a>
+            </div>
+            <div class="error-message" id="signupErrorMessage"></div>
+        </form>
+    </div>
+
+    <!-- 颜色选择面板 -->
+    <div class="color-palette">
+        <div class="color-option" data-color="default"></div>
+        <div class="color-option" data-color="sunset"></div>
+        <div class="color-option" data-color="forest"></div>
+        <div class="color-option" data-color="ocean"></div>
+        <div class="color-option" data-color="violet"></div>
+        <div class="color-option" data-color="rose"></div>
+    </div>
+
+    <!-- 添加风格选择面板 -->
+    <div class="style-panel">
+        <div class="style-option" data-style="default">
+            <div class="style-preview default-style"></div>
+            <span>Default</span>
+        </div>
+        <div class="style-option" data-style="glass">
+            <div class="style-preview glass-style"></div>
+            <span>Glass</span>
+        </div>
+        <div class="style-option" data-style="minimal">
+            <div class="style-preview minimal-style"></div>
+            <span>Minimal</span>
+        </div>
+        <div class="style-option" data-style="neomorphic">
+            <div class="style-preview neomorphic-style"></div>
+            <span>Neomorphic</span>
+        </div>
+    </div>
+
+    <!-- 保留原有JavaScript功能 -->
+    <script>
+        // 原有JavaScript功能保持不变
+        function toggleTheme() {
+            const body = document.body;
+            body.classList.toggle('light-mode');
+            
+            // 保存主题状态
+            const isLightMode = body.classList.contains('light-mode');
+            localStorage.setItem('theme', isLightMode ? 'light' : 'dark');
+            
+            // 动态更新aria标签
+            const themeButton = document.querySelector('.theme-toggle');
+            themeButton.setAttribute('aria-label', 
+                isLightMode ? 'Switch to dark mode' : 'Switch to light mode');
+        }
+
+        // 初始化主题
+        document.addEventListener('DOMContentLoaded', () => {
+            const savedTheme = localStorage.getItem('theme') || 'dark';
+            if (savedTheme === 'light') document.body.classList.add('light-mode');
+        });
+
+        // 表单切换
+        function switchForm(formType) {
+            const loginForm = document.getElementById('loginForm');
+            const signupForm = document.getElementById('signupForm');
+            
+            loginForm.style.display = formType === 'login' ? 'block' : 'none';
+            signupForm.style.display = formType === 'signup' ? 'block' : 'none';
+            document.querySelectorAll('.error-message').forEach(msg => msg.style.display = 'none');
+        }
+
+        // 登录验证
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            // 原有登录验证逻辑
+        });
+
+        // 注册验证
+        document.getElementById('signupForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            // 原有注册验证逻辑
+        });
+
+        // 在原有JavaScript中添加密码强度检测
+        document.getElementById('newPassword').addEventListener('input', function(e) {
+            const strengthBars = document.querySelectorAll('.password-strength span');
+            const password = e.target.value;
+            
+            strengthBars.forEach(bar => bar.classList.remove('active'));
+            
+            if(password.length >= 8) strengthBars[0].classList.add('active');
+            if(password.length >= 10) strengthBars[1].classList.add('active');
+            if(/[!@#$%^&*]/.test(password)) strengthBars[2].classList.add('active');
+            if(/[A-Z]/.test(password)) strengthBars[3].classList.add('active');
+        });
+
+        // 增强注册验证逻辑
+        document.getElementById('signupForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const username = document.getElementById('newUsername').value;
+            const password = document.getElementById('newPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            const errorMessage = document.getElementById('signupErrorMessage');
+
+            errorMessage.style.color = '#f87171'; // 重置为错误颜色
+
+            // 清除旧错误提示
+            document.querySelectorAll('.input-wrapper').forEach(wrapper => {
+                wrapper.style.borderColor = 'var(--border)';
+            });
+
+            let isValid = true;
+
+            // 邮箱验证
+            if (!/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/.test(email)) {
+                document.getElementById('email').parentElement.style.borderColor = '#f87171';
+                isValid = false;
+            }
+
+            // 用户名验证
+            if (username.length < 4) {
+                document.getElementById('newUsername').parentElement.style.borderColor = '#f87171';
+                isValid = false;
+            }
+
+            // 密码强度验证
+            if (password.length < 8) {
+                document.getElementById('newPassword').parentElement.style.borderColor = '#f87171';
+                isValid = false;
+            }
+
+            // 密码匹配验证
+            if (password !== confirmPassword) {
+                document.getElementById('confirmPassword').parentElement.style.borderColor = '#f87171';
+                errorMessage.textContent = "Passwords do not match";
+                errorMessage.style.display = 'block';
+                isValid = false;
+            }
+
+            if (!isValid) {
+                errorMessage.textContent = "Please fix the errors above";
+                errorMessage.style.display = 'block';
+                return;
+            }
+
+            // 注册成功处理
+            errorMessage.textContent = "Registration successful! Redirecting...";
+            errorMessage.style.color = '#4ade80';
+            errorMessage.style.display = 'block';
+
+            setTimeout(() => {
+                switchForm('login');
+                errorMessage.style.display = 'none';
+                // 这里可以添加跳转到IDE的代码
+                // window.location.href = 'ide.html';
+            }, 2000);
+        });
+
+        // 修改后的风格切换逻辑
+        function toggleStylePanel() {
+            const panel = document.querySelector('.style-panel');
+            panel.style.display = panel.style.display === 'grid' ? 'none' : 'grid';
+        }
+
+        // 关闭面板逻辑
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.style-toggle') && !e.target.closest('.style-panel')) {
+                document.querySelector('.style-panel').style.display = 'none';
+            }
+        });
+
+        // 风格选择逻辑
+        document.querySelectorAll('.style-option').forEach(option => {
+            option.addEventListener('click', function() {
+                const style = this.dataset.style;
+                const container = document.querySelector('.login-container');
+                
+                // 移除所有可能存在的旧样式
+                container.className = 'login-container'; // 重置class
+                container.classList.add(style); // 添加新样式
+                
+                localStorage.setItem('uiStyle', style);
+                document.querySelector('.style-panel').style.display = 'none';
+            });
+        });
+
+        // 初始化时应用保存的样式
+        document.addEventListener('DOMContentLoaded', () => {
+            const savedStyle = localStorage.getItem('uiStyle');
+            if (savedStyle) {
+                const container = document.querySelector('.login-container');
+                container.classList.add(savedStyle);
+            }
+        });
+
+        // 颜色切换功能
+        function showColorPalette() {
+            const palette = document.querySelector('.color-palette');
+            palette.style.display = palette.style.display === 'grid' ? 'none' : 'grid';
+        }
+
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.color-toggle')) {
+                document.querySelector('.color-palette').style.display = 'none';
+            }
+        });
+
+        // 修改颜色选择逻辑
+        colorPalette.querySelectorAll('.color-option').forEach(option => {
+            option.addEventListener('click', () => {
+                const scheme = colorSchemes[option.dataset.color];
+                // 更新所有颜色变量
+                document.documentElement.style.setProperty('--primary', scheme.primary);
+                document.documentElement.style.setProperty('--background', scheme.background);
+                document.documentElement.style.setProperty('--surface', scheme.surface);
+                document.documentElement.style.setProperty('--border', scheme.border);
+                document.documentElement.style.setProperty('--text-primary', scheme.textPrimary);
+                document.documentElement.style.setProperty('--text-secondary', scheme.textSecondary);
+                document.documentElement.style.setProperty('--primary-hover', scheme.primaryHover);
+                document.documentElement.style.setProperty('--primary-shadow', scheme.primaryShadow);
+                
+                localStorage.setItem('colorScheme', JSON.stringify(scheme));
+            });
+        });
+
+        // 修改初始化逻辑
+        document.addEventListener('DOMContentLoaded', () => {
+            const savedScheme = localStorage.getItem('colorScheme');
+            if (savedScheme) {
+                const scheme = JSON.parse(savedScheme);
+                document.documentElement.style.setProperty('--primary', scheme.primary);
+                document.documentElement.style.setProperty('--background', scheme.background);
+                document.documentElement.style.setProperty('--surface', scheme.surface);
+                document.documentElement.style.setProperty('--border', scheme.border);
+                document.documentElement.style.setProperty('--text-primary', scheme.textPrimary);
+                document.documentElement.style.setProperty('--text-secondary', scheme.textSecondary);
+                document.documentElement.style.setProperty('--primary-hover', scheme.primaryHover);
+                document.documentElement.style.setProperty('--primary-shadow', scheme.primaryShadow);
+            }
+        });
+
+        // 在现有JavaScript中添加动态追踪
+        document.querySelectorAll('.form-group, .login-button, .switch-form').forEach(element => {
+            element.addEventListener('mousemove', (e) => {
+                const rect = e.currentTarget.getBoundingClientRect();
+                const centerX = rect.left + rect.width/2;
+                const centerY = rect.top + rect.height/2;
+                
+                const rotateY = (e.clientX - centerX) * 0.02;
+                const rotateX = (centerY - e.clientY) * 0.02;
+                
+                e.currentTarget.style.transform = `
+                    rotateX(${rotateX}deg) 
+                    rotateY(${rotateY}deg) 
+                    translateZ(10px)
+                `;
+            });
+
+            element.addEventListener('mouseleave', () => {
+                e.currentTarget.style.transform = 'none';
+            });
+        });
+
+        // 在现有JavaScript中添加
+        const container = document.querySelector('.login-container');
+        let animationFrame;
+
+        container.addEventListener('mousemove', (e) => {
+            const rect = container.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            // 使用requestAnimationFrame优化性能
+            cancelAnimationFrame(animationFrame);
+            animationFrame = requestAnimationFrame(() => {
+                container.classList.add('active-glow');
+                container.style.setProperty('--glow-x', `${x}px`);
+                container.style.setProperty('--glow-y', `${y}px`);
+            });
+        });
+
+        container.addEventListener('mouseleave', () => {
+            container.classList.remove('active-glow');
+        });
+
+        // 动态更新光晕位置
+        const glowStyle = document.createElement('style');
+        document.head.appendChild(glowStyle);
+        glowStyle.sheet.insertRule(`
+            .login-container::after {
+                left: var(--glow-x, 50%);
+                top: var(--glow-y, 50%);
+            }
+        `);
+    </script>
+</body>
+</html>

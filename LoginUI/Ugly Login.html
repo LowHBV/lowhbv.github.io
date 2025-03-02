@@ -1,0 +1,169 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+    <title>用户登录</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <style type="text/css">
+        body {
+            background-color: #F0F0F0;
+            font-family: "宋体";
+            margin: 0;
+        }
+        
+        .container {
+            width: 800px;
+            margin: 20px auto;
+            background: white;
+            border: 3px solid #0066CC;
+            padding: 10px;
+        }
+        
+        .header {
+            background: #0066CC;
+            color: white;
+            padding: 5px;
+            font-size: 24px;
+            text-align: center;
+        }
+        
+        .login-table {
+            width: 100%;
+            border: 2px solid #CCCCCC;
+            margin: 20px 0;
+        }
+        
+        .login-table td {
+            padding: 5px;
+            border-bottom: 1px dotted #999999;
+        }
+        
+        input {
+            width: 200px;
+            height: 25px;
+            border: 2px inset #CCCCCC;
+        }
+        
+        .submit-btn {
+            background: #FF0000;
+            color: white;
+            font-weight: bold;
+            width: 100px;
+            height: 30px;
+            border: 2px outset #CCCCCC;
+        }
+        
+        .links {
+            text-align: center;
+            margin: 10px;
+        }
+        
+        .marquee {
+            background: yellow;
+            color: red;
+            font-size: 14px;
+            padding: 3px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">■ 用户管理系统 ■</div>
+        
+        <marquee class="marquee" scrollamount="5">系统提示：请勿在公共电脑保存登录信息！</marquee>
+
+        <!-- 主登录表单 -->
+        <table class="login-table" id="main-login">
+            <tr>
+                <td width="30%" align="right"><b>用户名：</b></td>
+                <td><input type="text" name="username"></td>
+            </tr>
+            <tr>
+                <td align="right"><b>密　码：</b></td>
+                <td><input type="password" name="password"></td>
+            </tr>
+            <tr>
+                <td colspan="2" align="center">
+                    <input type="submit" value="立即登录" class="submit-btn">
+                    <input type="button" value="安全登录" class="submit-btn" onclick="showForm('token-login')">
+                </td>
+            </tr>
+        </table>
+
+        <!-- Token登录表单 -->
+        <table class="login-table" id="token-login" style="display:none">
+            <tr>
+                <td width="30%" align="right"><b>动态令牌：</b></td>
+                <td><input type="text" name="token" style="width:250px"></td>
+            </tr>
+            <tr>
+                <td colspan="2" align="center">
+                    <input type="submit" value="验证令牌" class="submit-btn">
+                    <input type="button" value="返回" class="submit-btn" onclick="showForm('main-login')">
+                </td>
+            </tr>
+        </table>
+
+        <!-- 注册表单 -->
+        <table class="login-table" id="register-form" style="display:none">
+            <tr>
+                <td width="30%" align="right"><b>注册账号：</b></td>
+                <td><input type="text" name="new_user"></td>
+            </tr>
+            <tr>
+                <td align="right"><b>设置密码：</b></td>
+                <td><input type="password" name="new_pwd"></td>
+            </tr>
+            <tr>
+                <td align="right"><b>确认密码：</b></td>
+                <td><input type="password" name="confirm_pwd"></td>
+            </tr>
+            <tr>
+                <td colspan="2" align="center">
+                    <input type="submit" value="提交注册" class="submit-btn">
+                    <input type="button" value="返回" class="submit-btn" onclick="showForm('main-login')">
+                </td>
+            </tr>
+        </table>
+
+        <!-- 忘记密码表单 -->
+        <table class="login-table" id="forgot-pwd" style="display:none">
+            <tr>
+                <td width="30%" align="right"><b>找回账号：</b></td>
+                <td><input type="text" name="recovery_user"></td>
+            </tr>
+            <tr>
+                <td align="right"><b>验证邮箱：</b></td>
+                <td><input type="text" name="recovery_email"></td>
+            </tr>
+            <tr>
+                <td colspan="2" align="center">
+                    <input type="submit" value="发送验证码" class="submit-btn">
+                    <input type="button" value="返回" class="submit-btn" onclick="showForm('main-login')">
+                </td>
+            </tr>
+        </table>
+
+        <div class="links">
+            <a href="#" onclick="showForm('forgot-pwd')">忘记密码？</a> | 
+            <a href="#" onclick="showForm('register-form')">新用户注册</a> | 
+            <a href="#" onclick="showForm('token-login')">安全登录</a>
+        </div>
+        
+        <center>
+            <font color="gray" size="2">
+                © 2005-2024 经典系统 版权所有<br>
+                客服热线：400-123-4567
+            </font>
+        </center>
+    </div>
+
+    <script type="text/javascript">
+        function showForm(formId) {
+            var forms = ['main-login', 'token-login', 'register-form', 'forgot-pwd'];
+            forms.forEach(function(id) {
+                document.getElementById(id).style.display = id === formId ? '' : 'none';
+            });
+        }
+    </script>
+</body>
+</html>

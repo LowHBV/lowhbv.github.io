@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>动态绘制登录系统</title>
+    <style>
+        :root {
+            --primary-color: #007AFF;
+            --success-color: #34C759;
+            --error-color: #FF3B30;
+            --bg-color: #000;
+            --text-color: #FFF;
+        }
+
+        body {
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: var(--bg-color);
+            overflow: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        }
+
+        #canvas {
+            width: 400px;
+            height: 500px;
+        }
+
+        .form-container {
+            position: absolute;
+            opacity: 0;
+            transition: opacity 0.8s;
+            width: 320px;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+            position: relative;
+        }
+
+        input {
+            width: 100%;
+            padding: 15px;
+            background: rgba(255,255,255,0.1);
+            border: none;
+            border-radius: 10px;
+            color: var(--text-color);
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+
+        input:focus {
+            outline: none;
+            box-shadow: 0 0 0 2px var(--primary-color);
+        }
+
+        button {
+            width: 100%;
+            padding: 15px;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        button:hover {
+            background: #0063CC;
+        }
+
+        button.loading::after {
+            content: "";
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            transform: translateY(-50%);
+        }
+
+        .error-message {
+            color: var(--error-color);
+            font-size: 14px;
+            position: absolute;
+            bottom: -20px;
+            left: 0;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        @keyframes spin {
+            to { transform: translateY(-50%) rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    
+    <div class="form-container">
+        <form id="loginForm">
+            <div class="form-group">
+                <input type="text" placeholder="用户名" id="username" autocomplete="off">
+                <div class="error-message" id="usernameError"></div>
+            </div>
+            <div class="form-group">
+                <input type="password" placeholder="密码" id="password">
+                <div class="error-message" id="passwordError"></div>
+            </div>
+            <button type="submit" id="loginBtn">登录</button>
+        </form>
+    </div>
+
+<script>
+// 初始化画布
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+let isDrawingComplete = false;
+
+function initCanvas() {
+    canvas.width = 400;
+    canvas.height = 500;
+    ctx.lineWidth = 2.5;
+    ctx.strokeStyle = 'rgba(255,255,255,0.95)';
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.shadowColor = 'rgba(255,255,255,0.3)';
+    ctx.shadowBlur = 10;
+}
+initCanvas();
+
+// 路径配置
+const drawingPath = [
+    // 窗口框架
+    {x: 50, y: 80}, {x: 350, y: 80},
+    {x: 350, y: 380}, {x: 50, y: 380},
+    {x: 50, y: 80},
+    
+    // 用户名框
+    {x: 60, y: 150}, {x: 340, y: 150},
+    {x: 340, y: 190}, {x: 60, y: 190},
+    {x: 60, y: 150},
+    
+    // 密码框
+    {x: 60, y: 240}, {x: 340, y: 240},
+    {x: 340, y: 280}, {x: 60, y: 280},
+    {x: 60, y: 240},
+    
+    // 登录按钮
+    {x: 100, y: 340}, {x: 300, y: 340},
+    {x: 300, y: 380}, {x: 100, y: 380},
+    {x: 100, y: 340}
+];
+
+// 动画系统
+let currentStep = 0;
+let progress = 0;
+const totalDuration = 12000; // 总时长12秒
+
+function easeOutQuad(t) {
+    return t * (2 - t);
+}
+
+function drawFrame(timestamp) {
+    if (!drawingStartTime) drawingStartTime = timestamp;
+    const elapsed = timestamp - drawingStartTime;
+    progress = easeOutQuad(Math.min(elapsed / totalDuration, 1));
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.beginPath();
+
+    // 绘制已完成路径
+    ctx.moveTo(drawingPath[0].x, drawingPath[0].y);
+    for (let i = 1; i < Math.floor(progress * drawingPath.length); i++) {
+        ctx.lineTo(drawingPath[i].x, drawingPath[i].y);
+    }
+
+    // 绘制进行中的路径
+    if (progress < 1) {
+        const currentIndex = Math.floor(progress * drawingPath.length);
+        const currentPoint = drawingPath[currentIndex];
+        const nextPoint = drawingPath[currentIndex + 1] || currentPoint;
+        const t = (progress * drawingPath.length) % 1;
+
+        const x = currentPoint.x + (nextPoint.x - currentPoint.x) * t;
+        const y = currentPoint.y + (nextPoint.y - currentPoint.y) * t;
+        ctx.lineTo(x, y);
+        
+        // 运动轨迹效果
+        ctx.save();
+        ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+        ctx.lineWidth = 8;
+        ctx.stroke();
+        ctx.restore();
+    }
+
+    ctx.stroke();
+
+    if (progress < 1) {
+        requestAnimationFrame(drawFrame);
+    } else if (!isDrawingComplete) {
+        isDrawingComplete = true;
+        document.querySelector('.form-container').style.opacity = '1';
+        document.getElementById('username').focus();
+    }
+}
+
+let drawingStartTime = null;
+setTimeout(() => {
+    drawingStartTime = performance.now();
+    requestAnimationFrame(drawFrame);
+}, 500);
+
+// 登录系统
+const loginForm = document.getElementById('loginForm');
+const usernameInput = document.getElementById('username');
+const passwordInput = document.getElementById('password');
+const loginBtn = document.getElementById('loginBtn');
+
+function showError(element, message) {
+    element.nextElementSibling.style.opacity = '1';
+    element.nextElementSibling.textContent = message;
+    element.style.boxShadow = '0 0 0 2px var(--error-color)';
+    setTimeout(() => {
+        element.nextElementSibling.style.opacity = '0';
+        element.style.boxShadow = '';
+    }, 2000);
+}
+
+async function handleLogin(e) {
+    e.preventDefault();
+    
+    const username = usernameInput.value.trim();
+    const password = passwordInput.value;
+
+    // 简单验证
+    if (!username) return showError(usernameInput, '请输入用户名');
+    if (!password) return showError(passwordInput, '请输入密码');
+
+    // 显示加载状态
+    loginBtn.classList.add('loading');
+    loginBtn.disabled = true;
+
+    try {
+        // 模拟API请求
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        
+        if (username === 'admin' && password === 'admin123') {
+            // 登录成功效果
+            loginBtn.style.backgroundColor = 'var(--success-color)';
+            loginBtn.textContent = '登录成功!';
+            setTimeout(() => {
+                window.location.href = '/dashboard';
+            }, 1000);
+        } else {
+            throw new Error('用户名或密码错误');
+        }
+    } catch (error) {
+        showError(passwordInput, error.message);
+        loginBtn.style.backgroundColor = 'var(--error-color)';
+        setTimeout(() => {
+            loginBtn.style.backgroundColor = '';
+        }, 1000);
+    } finally {
+        loginBtn.classList.remove('loading');
+        loginBtn.disabled = false;
+        setTimeout(() => {
+            loginBtn.textContent = '登录';
+        }, 2000);
+    }
+}
+
+// 事件监听
+loginForm.addEventListener('submit', handleLogin);
+
+// 输入验证
+usernameInput.addEventListener('input', () => {
+    usernameInput.nextElementSibling.style.opacity = '0';
+});
+
+passwordInput.addEventListener('input', () => {
+    passwordInput.nextElementSibling.style.opacity = '0';
+});
+
+// 窗口尺寸适配
+window.addEventListener('resize', () => {
+    initCanvas();
+    if (!isDrawingComplete) requestAnimationFrame(drawFrame);
+});
+</script>
+</body>
+</html>

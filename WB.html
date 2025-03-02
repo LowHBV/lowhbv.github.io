@@ -1,0 +1,2259 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>现代文本编辑器</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        }
+
+        :root {
+            --bg-color: #1a1f25;
+            --text-color: #ffffff;
+            --secondary-bg: rgba(255,255,255,0.1);
+            --border-color: rgba(255,255,255,0.2); /* 深色模式下的默认边框颜色 */
+            --line-number-color: rgba(255,255,255,0.3);
+            --line-number-bg: rgba(0,0,0,0.15);
+            --line-number-border: rgba(255,255,255,0.1);
+            --line-number-active: #4aa3ff;
+            --search-bg: rgba(255,255,255,0.1);
+            --search-border: rgba(255,255,255,0.2);
+            --search-highlight: rgba(255,235,59,0.3);
+            --text-secondary: rgba(255,255,255,0.6);
+            --save-green: #28a7464f; /* 新增 --save-green 变量 */
+        }
+
+        [data-theme="light"] {
+            --bg-color: #f8f9fa;
+            --text-color: #2d3436;
+            --secondary-bg: rgba(0,0,0,0.04);
+            --border-color: rgba(0,0,0,0.12); /* 浅色模式下的默认边框颜色 */
+
+            /* 新增浅色模式专用颜色 */
+            --accent-blue: #3c3b3b;
+            --hover-bg: rgba(25, 113, 194, 0.08);
+            --active-bg: rgba(25, 113, 194, 0.15);
+            --line-number-color: rgba(0,0,0,0.3);
+            --line-number-bg: rgba(0,0,0,0.05);
+            --line-number-border: rgba(0,0,0,0.1);
+            --line-number-active: #1971c2;
+            --search-bg: rgba(0,0,0,0.05);
+            --search-highlight: rgba(255,235,59,0.5);
+            --text-secondary: rgba(0,0,0,0.6);
+        }
+
+        body {
+            min-height: 100vh;
+            background: linear-gradient(135deg, var(--bg-color) 0%, var(--bg-color) 100%);
+            padding: 20px;
+            color: var(--text-color);
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            height: calc(100vh - 40px);
+            display: flex;
+            flex-direction: row;
+            border-radius: 20px;
+            gap: 15px;
+        }
+
+        .menu-bar {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px 15px 0 0;
+            padding: 15px;
+            display: flex;
+            gap: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-bottom: none;
+            justify-content: space-between;
+        }
+
+        .menu-item {
+            color: #fff;
+            text-decoration: none;
+            font-size: 14px;
+            padding: 5px 10px;
+            border-radius: 5px;
+            transition: all 0.3s ease;
+        }
+
+        .menu-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .editor-container {
+            flex: 1;
+            background: var(--secondary-bg);
+            backdrop-filter: blur(10px);
+            border-radius: 0 0 15px 15px;
+            padding: 20px 30px;
+            border: 1px solid var(--border-color);
+            position: relative;
+            --editor-font-size: 16px;
+            --editor-font-family: system-ui;
+        }
+
+        #editor {
+            width: 100%;
+            height: 100%;
+            background: transparent;
+            border: none;
+            color: #fff;
+            font-size: var(--editor-font-size) !important;
+            font-family: var(--editor-font-family), monospace !important;
+            line-height: 1.7;
+            resize: none;
+            outline: none;
+            padding: 0 15px;
+        }
+
+        #editor::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .status-bar {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 12px;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 5px 10px;
+            border-radius: 8px;
+            display: none;
+        }
+
+        .button {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 5px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 14px;
+        }
+
+        .button:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                height: calc(100vh - 20px);
+                border-radius: 15px;
+                display: flex; /* 确保container是flex容器 */
+            }
+
+            .menu-bar {
+                flex-wrap: wrap;
+            }
+
+            .sidebar {
+                width: 180px;
+                display: none; /* 默认隐藏左侧边栏 */
+            }
+
+            .toolbar {
+                display: none; /* 默认隐藏右侧工具栏 */
+                transition: all 0.3s ease; /* 添加过渡效果 */
+                opacity: 0; /* 初始透明度为0 */
+                width: 220px; /* 确保宽度 */
+            }
+
+            /* 展开状态下显示并恢复透明度 */
+            .container.toolbar-expanded .toolbar {
+                display: flex;
+                opacity: 1;
+            }
+
+            #globalUserInfo {
+                top: 10px;
+                left: 10px;
+                transform: scale(0.8);
+                transform-origin: left top;
+            }
+
+            .container {
+                margin-top: 60px !important;
+            }
+
+            /* 新增展开状态的样式 */
+            .container.sidebar-expanded .sidebar {
+                display: block;
+            }
+
+            .container.toolbar-expanded .toolbar {
+                display: flex;
+            }
+
+            /* 手机模式下，未展开边栏时显示toggle bar */
+            .container:not(.sidebar-expanded) #sidebarToggleBar {
+                display: block;
+            }
+
+            .container:not(.toolbar-expanded) #toolbarToggleBar {
+                display: block;
+            }
+
+            /* 手机模式下，editor区域占据剩余空间 */
+            .editor-container {
+                flex: 1;
+            }
+
+            /* 调整展开条的位置 */
+            #sidebarToggleBar {
+                position: absolute;
+                left: 0;
+                top: 50%;
+                transform: translateY(-50%);
+                z-index: 2; /* 确保在editor之上 */
+                width: 6px; /* 设置宽度 */
+                padding: 5px 0; /* 调整padding */
+                text-align: center; /* 文本居中 */
+                border-radius: 5px 0 0 5px; /* 调整圆角 */
+                font-size: 12px; /* 调整字体大小 */
+            }
+
+            #toolbarToggleBar {
+                position: absolute;
+                right: 0;
+                top: 50%;
+                transform: translateY(-50%);
+                z-index: 2; /* 确保在editor之上 */
+                width: 6px; /* 设置宽度 */
+                padding: 5px 0; /* 调整padding */
+                text-align: center; /* 文本居中 */
+                border-radius: 0 5px 5px 0; /* 调整圆角 */
+                font-size: 12px; /* 调整字体大小 */
+            }
+        }
+
+        /* 新增左侧边栏样式 */
+        .sidebar {
+            width: 200px;
+            background: rgba(0, 0, 0, 0.2);
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            overflow-y: auto;
+            border-radius: 15px 0 0 15px;
+        }
+
+        .file-list {
+            margin-top: 20px;
+        }
+
+        .file-item {
+            color: rgba(255, 255, 255, 0.8);
+            padding: 8px 12px;
+            margin: 5px 0;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .file-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .file-item.active {
+            background: rgba(74, 144, 226, 0.3);
+            color: #fff;
+        }
+
+        /* 新增格式选择弹窗样式 */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-content {
+            background: rgba(255, 255, 255, 0.1) !important;
+            backdrop-filter: blur(20px) saturate(180%);
+            border: 1px solid rgba(255,255,255,0.15);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+            padding: 25px;
+            border-radius: 15px;
+            width: 300px;
+        }
+
+        .format-option {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        .format-option:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .logout-button {
+            background: rgba(255, 75, 75, 0.2);
+            border-color: rgba(255, 75, 75, 0.3);
+        }
+
+        .logout-button:hover {
+            background: rgba(255, 75, 75, 0.3);
+        }
+
+        /* 新增错误提示样式 */
+        .error-toast {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #ff4757;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            display: none;
+            z-index: 1000;
+        }
+
+        /* 新增开关样式 */
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 48px;
+            height: 24px;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(255,255,255,0.2);
+            transition: .4s;
+            border-radius: 12px;
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 20px;
+            width: 20px;
+            left: 2px;
+            bottom: 2px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .toggle-slider {
+            background-color: #4CAF50;
+        }
+
+        input:checked + .toggle-slider:before {
+            transform: translateX(24px);
+        }
+
+        .toggle-label {
+            color: white;
+            font-size: 14px;
+            margin-right: 10px;
+        }
+
+        /* 在原有开关样式下新增 */
+        .ide-toggle {
+            margin-left: 15px;
+        }
+
+        /* 新增右侧工具栏样式 */
+        .toolbar {
+            width: 220px;
+            background: rgba(0, 0, 0, 0.2);
+            border-left: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 0 15px 15px 0;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            height: calc(100vh - 40px);
+            overflow-y: auto;
+        }
+
+        .toolbar-section {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 8px;
+        }
+
+        .toolbar-title {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 12px;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* 新增右键菜单样式 */
+        .context-menu {
+            position: absolute;
+            background: rgba(255,255,255,0.1) !important;
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            display: none;
+            z-index: 1000;
+            backdrop-filter: blur(20px) saturate(180%);
+        }
+
+        .menu-item {
+            color: rgba(255,255,255,0.8);
+            padding: 8px 20px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+
+        .menu-item:hover {
+            background: rgba(255,255,255,0.1);
+        }
+
+        .menu-divider {
+            border-top: 1px solid rgba(255,255,255,0.1);
+            margin: 4px 0;
+        }
+
+        /* 在工具栏添加主题切换 */
+        .toolbar-section:last-child {
+            text-align: right;
+        }
+
+        .theme-select {
+            background: transparent;
+            border: none;
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        .user-info {
+            transition: all 0.3s ease;
+            padding: 5px 10px;
+            border-radius: 8px;
+        }
+
+        .user-info:hover {
+            background: rgba(255,255,255,0.1);
+        }
+
+        #avatarPath {
+            margin-top: 8px;
+            border-radius: 6px;
+            font-size: 13px;
+        }
+
+        .file-item.folder {
+            color: #4aa3ff;
+            font-weight: 500;
+        }
+
+        .file-item.folder:hover {
+            background: rgba(74, 163, 255, 0.1);
+        }
+
+        /* 浅色模式覆盖样式 */
+        [data-theme="light"] {
+            .sidebar {
+                background: rgba(255,255,255,0.7);
+                border-right-color: rgba(0,0,0,0.08);
+            }
+
+            .file-item:hover {
+                background: var(--hover-bg);
+            }
+
+            .file-item.active {
+                background: var(--active-bg);
+                color: var(--accent-blue);
+            }
+
+            .button {
+                background: rgba(255,255,255,0.9);
+                color: var(--text-color);
+                border-color: var(--border-color);
+            }
+
+            .button:hover {
+                background: rgba(255,255,255,0.95);
+            }
+
+            .modal-content,
+            .context-menu,
+            .search-panel {
+                background: rgba(255,255,255,0.9) !important;
+                border-color: rgba(0,0,0,0.08);
+            }
+
+            .menu-item {
+                color: var(--text-color);
+            }
+
+            .menu-item:hover {
+                background: var(--hover-bg);
+            }
+
+            .toggle-slider {
+                background-color: rgba(0,0,0,0.1);
+            }
+
+            .file-item.folder {
+                color: var(--accent-blue);
+            }
+
+            .error-toast {
+                background: #ff6b6b;
+                color: white;
+            }
+
+            #editor {
+                color: var(--text-color);
+            }
+
+            #editor::placeholder {
+                color: rgba(45, 52, 54, 0.4);
+            }
+
+            #lineNumbers {
+                color: rgba(0,0,0,0.3);
+            }
+        }
+
+        #lineNumbers div {
+            position: relative;
+            padding-right: 10px;
+            transition: color 0.2s ease;
+        }
+
+        #lineNumbers div::after {
+            content: '';
+            position: absolute;
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 2px;
+            height: 60%;
+            background: var(--line-number-border);
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+
+        #lineNumbers div:hover {
+            color: var(--line-number-active);
+        }
+
+        #lineNumbers div.active-line {
+            color: var(--line-number-active);
+            font-weight: 500;
+        }
+
+        #lineNumbers div.active-line::after {
+            opacity: 1;
+        }
+
+        .highlight {
+            background: var(--search-highlight);
+            border: 1px solid rgba(255,235,59,0.5);
+            border-radius: 3px;
+        }
+
+        .current-highlight {
+            background: rgba(255,235,59,0.6);
+            border-color: rgba(255,235,59,0.8);
+        }
+
+        /* 新增可拖动搜索面板样式 */
+        .search-panel {
+            position: fixed;
+            top: 100px;
+            left: 100px;
+            min-width: 400px;
+            width: max-content;
+            background: rgba(255,255,255,0.1) !important;
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 12px;
+            padding: 15px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+            z-index: 1000;
+            cursor: move;
+            user-select: none;
+            backdrop-filter: blur(20px) saturate(180%);
+        }
+
+        .search-panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .search-panel-content {
+            min-width: 380px;
+        }
+
+        .search-panel-close {
+            cursor: pointer;
+            padding: 5px;
+            border-radius: 50%;
+            transition: background 0.2s ease;
+        }
+
+        .search-panel-close:hover {
+            background: rgba(255,255,255,0.1);
+        }
+
+        /* 新增字体控制样式 */
+        .font-control {
+            width: 100%;
+            padding: 6px 8px;
+            border-radius: 6px;
+            background: var(--secondary-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+            font-size: 13px;
+            cursor: pointer;
+        }
+
+        /* 浅色模式适配 */
+        [data-theme="light"] .font-control {
+            background: rgba(255,255,255,0.9);
+            border-color: var(--border-color);
+        }
+
+        .modal-content::-webkit-scrollbar {
+            width: 8px;
+            background: var(--secondary-bg);
+        }
+
+        .modal-content::-webkit-scrollbar-thumb {
+            background: var(--accent-blue);
+            border-radius: 4px;
+        }
+
+        .button.danger {
+            background: #dc3545;
+            border-color: #dc3545;
+        }
+
+        .button.danger:hover {
+            background: #bb2d3b;
+        }
+
+        /* 新增统一弹窗模糊效果 */
+        .context-menu,
+        .search-panel,
+        #fileContextMenu {
+            backdrop-filter: blur(20px) saturate(180%);
+            background: rgba(255,255,255,0.1) !important;
+            border: 1px solid rgba(255,255,255,0.15);
+        }
+
+        /* 浅色模式适配 */
+        [data-theme="light"] {
+            .modal-content,
+            .context-menu,
+            .search-panel {
+                background: rgba(255,255,255,0.9) !important;
+                border-color: rgba(0,0,0,0.08);
+            }
+        }
+
+        /* 左下角按钮通用样式 */
+        .bottom-left-button {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            padding: 10px 15px;
+            border-radius: 8px;
+            /* background-image: linear-gradient(to right, #ff5733, #ffcc33, #aaff33, #33ff57, #33ccff, #5733ff, #cc33ff); !* 原有彩色渐变 *! */
+            background-image: linear-gradient(to right,
+                rgba(255, 88, 51, 0.664),    /* 半透明红色 */
+                rgba(255, 204, 51, 0.664),   /* 半透明橙色 */
+                rgba(170, 255, 51, 0.664),   /* 半透明黄色 */
+                rgba(51, 255, 88, 0.664),    /* 半透明绿色 */
+                rgba(51, 204, 255, 0.664),   /* 半透明青色 */
+                rgba(88, 51, 255, 0.664),    /* 半透明蓝色 */
+                rgba(204, 51, 255, 0.664)    /* 半透明紫色 */
+            );
+            color: var(--text-color);
+            /* border: none; !*  移除 border 属性，注释掉 *! */
+            border: 1px solid rgb(255, 255, 255); /* 修改边框颜色为白色 */
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+            z-index: 1000;
+            background-size: 200% 100%;
+            animation: gradientAnimation 5s linear infinite;
+            opacity: 0.7; /* 设置整体透明度为 0.8 (可以调整) */
+            backdrop-filter: blur(50px); /*  可以添加轻微的模糊效果，增强半透明感 */
+        }
+
+        .bottom-left-button:hover {
+            filter: brightness(1.1);
+            opacity: 1; /* 鼠标悬停时恢复不透明 */
+        }
+
+        @keyframes gradientAnimation {
+            0% {
+                background-position: 0% 50%;
+            }
+            100% {
+                background-position: 100% 50%;
+            }
+        }
+
+        .save-btn {
+            background: var(--save-green); /* 使用 --save-green 变量 */
+            border-color: var(--save-green); /* 使用 --save-green 变量 */
+            color: white;
+        }
+    </style>
+</head>
+<body>
+<!-- 新增固定定位的用户信息 -->
+<div id="globalUserInfo" style="position: fixed; top: 20px; left: 20px; z-index: 1000; display: flex; align-items: center; gap: 10px;">
+    <img id="userAvatar" src="./default-avatar.png"
+         style="width: 40px; height: 40px; border-radius: 50%; border: 2px solid var(--border-color);">
+    <span id="username" style="color: var(--text-color); font-size: 16px; font-weight: 500; text-shadow: 0 2px 4px rgba(0,0,0,0.1);">LowHBV</span>
+</div>
+
+<!-- 在格式选择弹窗前新增新建文件弹窗 -->
+<div class="modal-overlay" id="newFileModal">
+    <div class="modal-content" style="width: 400px;">
+        <h3 style="color: #fff; margin-bottom: 20px;">新建文件</h3>
+
+        <!-- 文件名输入 -->
+        <div style="margin-bottom: 20px;">
+            <input type="text" id="newFileName"
+                   style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.2); background: rgba(0,0,0,0.3); color: white;"
+                   placeholder="输入文件名（无需扩展名）">
+        </div>
+
+        <!-- 密码输入 -->
+        <div style="margin: 10px 0;">
+            <input type="password" id="filePassword"
+                   style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--secondary-bg); color: var(--text-color);"
+                   placeholder="文件密码（可选）">
+        </div>
+
+        <!-- 格式选择 -->
+        <div class="toolbar-section" style="margin-bottom: 20px;">
+            <div class="toolbar-title">选择格式</div>
+            <!-- 新增自定义格式输入 -->
+            <div style="margin: 10px 0;">
+                <input type="text" id="customFormat"
+                       style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.2); background: rgba(0,0,0,0.3); color: white;"
+                       placeholder="或输入自定义格式（如：js）">
+            </div>
+            <!-- 原有格式选项保持不变 -->
+            <div class="format-option" data-format="txt">
+                <span style="color: #fff;">文本文件 (.txt)</span>
+            </div>
+            <div class="format-option" data-format="html">
+                <span style="color: #fff;">HTML 文件 (.html)</span>
+            </div>
+            <div class="format-option" data-format="md">
+                <span style="color: #fff;">Markdown 文件 (.md)</span>
+            </div>
+            <div class="format-option" data-format="hty">
+                <span style="color: #fff;">绘图文件 (.hty)</span>
+            </div>
+        </div>
+
+        <div style="display: flex; gap: 10px;">
+            <button class="button" onclick="createCustomFile()" style="flex:1;">创建</button>
+            <button class="button" onclick="closeNewFileModal()" style="flex:1;">取消</button>
+        </div>
+    </div>
+</div>
+
+<!-- 新增导出菜单弹窗 -->
+<div class="modal-overlay" id="exportModal">
+    <div class="modal-content" style="width: 400px;">
+        <h3 style="color: #fff; margin-bottom: 20px;">导出文件设置</h3>
+
+        <!-- 文件名输入 -->
+        <div style="margin-bottom: 20px;">
+            <input type="text" id="exportFileName"
+                   style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.2); background: rgba(0,0,0,0.3); color: white;"
+                   placeholder="输入文件名">
+        </div>
+
+        <!-- 格式选择 -->
+        <div class="toolbar-section" style="margin-bottom: 20px;">
+            <div class="toolbar-title">选择格式</div>
+            <div class="format-option" data-format="current">
+                <span style="color: #fff;">当前格式 (.${currentFile?.format})</span>
+            </div>
+            <div class="format-option" data-format="txt">
+                <span style="color: #fff;">文本文件 (.txt)</span>
+            </div>
+            <div class="format-option" data-format="html">
+                <span style="color: #fff;">HTML 文件 (.html)</span>
+            </div>
+            <div class="format-option" data-format="md">
+                <span style="color: #fff;">Markdown 文件 (.md)</span>
+            </div>
+        </div>
+
+        <div style="display: flex; gap: 10px;">
+            <button class="button" onclick="handleExport()" style="flex:1;">导出</button>
+            <button class="button" onclick="closeExportModal()" style="flex:1;">取消</button>
+        </div>
+    </div>
+</div>
+
+<!-- 新增新建文件夹弹窗 -->
+<div class="modal-overlay" id="newFolderModal">
+    <div class="modal-content" style="width: 400px;">
+        <h3 style="color: var(--text-color); margin-bottom: 20px;">新建文件夹</h3>
+        <div style="margin-bottom: 20px;">
+            <input type="text" id="folderNameInput"
+                   style="width: 100%; padding: 8px; border-radius: 6px;
+                              border: 1px solid var(--border-color);
+                              background: var(--secondary-bg);
+                              color: var(--text-color);"
+                   placeholder="输入文件夹名称"
+                   onkeypress="if(event.keyCode === 13) confirmCreateFolder()">
+        </div>
+        <div style="display: flex; gap: 10px;">
+            <button class="button" onclick="confirmCreateFolder()" style="flex:1;">创建</button>
+            <button class="button" onclick="closeNewFolderModal()" style="flex:1;">取消</button>
+        </div>
+    </div>
+</div>
+
+<div class="container" style="margin-top: 80px;">
+    <!-- 左侧边栏 -->
+    <div class="sidebar">
+        <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+            <button class="button" onclick="showNewFileModal()" style="flex:1;">新建文件</button>
+            <button class="button" onclick="createNewFolder()" style="flex:1;">新建文件夹</button>
+        </div>
+        <div class="file-list" id="fileList"></div>
+    </div>
+
+    <!-- 左侧边栏展开条 -->
+    <div class="sidebar-toggle-bar" id="sidebarToggleBar" onclick="toggleSidebar()"
+         style="display: none; cursor: pointer; padding: 10px; background: rgba(0, 0, 0, 0.2); border-radius: 10px 0 0 10px; color: white;">
+        &gt;
+    </div>
+
+    <!-- 主编辑器区域 -->
+    <div style="flex: 1; display: flex; flex-direction: column;">
+        <div class="menu-bar">
+            <div style="display: flex; gap: 20px; align-items: center;">
+                <button class="button" id="newBtn">新建</button>
+                <button class="button save-btn" id="saveBtn">保存</button>
+                <!-- 新增展开/折叠按钮 -->
+                <button class="button" onclick="toggleSidebar()" id="sidebarToggleButton">展开左侧</button>
+                <button class="button" onclick="toggleToolbar()" id="toolbarToggleButton">展开右侧</button>
+                <button class="button" onclick="showAuditLog()" style="margin-left: auto;">审计日志</button>
+            </div>
+            <button class="button logout-button" onclick="logout()">退出登录</button>
+        </div>
+        <div class="editor-container">
+            <!-- 添加行号容器 -->
+            <div id="lineNumbers" style="
+                    position: absolute;
+                    left: 0;
+                    top: 0;
+                    bottom: 0;
+                    width: 45px;
+                    padding: 20px 0;
+                    font-size: var(--editor-font-size);
+                    line-height: 1.7;
+                    color: var(--line-number-color);
+                    text-align: center;
+                    user-select: none;
+                    display: none;
+                    background: var(--line-number-bg);
+                    border-right: 1px solid var(--line-number-border);
+                    z-index: 1;
+                    overflow: hidden;
+                "></div>
+            <textarea id="editor" placeholder="开始输入..." style="padding-left: 50px !important;"></textarea>
+            <!-- Canvas for drawing -->
+            <canvas id="htyCanvas" style="display: none; width: 100%; height: 100%; background-color: white;"></canvas>
+            <div class="status-bar" id="status">已保存</div>
+        </div>
+    </div>
+
+    <!-- 右侧工具栏 -->
+    <div class="toolbar">
+        <div class="toolbar-section">
+            <div class="toolbar-title">编辑设置</div>
+            <!-- 自动保存开关 -->
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span class="toggle-label">自动保存</span>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="autoSaveToggle" checked>
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+            <!-- IDE模式开关 -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 15px;">
+                <span class="toggle-label">IDE模式</span>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="ideModeToggle">
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+            <!-- 新增行号显示开关 -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 15px;">
+                <span class="toggle-label">显示行号</span>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="lineNumberToggle">
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+            <!-- 新增拼写检查开关 -->
+            <label class="toggle-switch" style="margin-top: 15px;">
+                <input type="checkbox" id="spellCheckToggle" onchange="toggleSpellCheck()">
+                <span class="toggle-slider"></span>
+                <span style="color: var(--text-color); margin-left: 8px;">拼写检查</span>
+            </label>
+            <!-- 新增画笔颜色选择 -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 15px;">
+                <span class="toggle-label">画笔颜色</span>
+                <input type="color" id="penColorPicker" value="#000000" style="width: 40px; height: 25px; background: var(--secondary-bg); border: 1px solid var(--border-color);"/>
+            </div>
+        </div>
+        <div class="toolbar-section">
+            <div class="toolbar-title">文本设置</div>
+            <!-- 新增字号选择 -->
+            <div style="margin-bottom: 10px;">
+                <select class="font-control" id="fontSizeSelect" onchange="updateFontSize(this.value)">
+                    <option value="14">14px</option>
+                    <option value="16">16px</option>
+                    <option value="18">18px</option>
+                    <option value="20">20px</option>
+                </select>
+            </div>
+
+            <!-- 新增字体选择 -->
+            <div>
+                <select class="font-control" id="fontFamilySelect" onchange="updateFontFamily(this.value)">
+                    <option value="system-ui">系统默认</option>
+                    <option value="Consolas">Consolas</option>
+                    <option value="Monaco">Monaco</option>
+                    <option value="'Courier New'">Courier New</option>
+                </select>
+            </div>
+        </div>
+        <div class="toolbar-section">
+            <div class="toolbar-title">文件操作</div>
+            <button class="button" onclick="handleFileOpen()">打开本地文件</button>
+            <button class="button" onclick="handleFileSave()" style="margin-top:10px;">保存到本地</button>
+        </div>
+        <div class="toolbar-section">
+            <div class="toolbar-title">界面主题</div>
+            <select class="theme-select" onchange="toggleTheme(this.value)">
+                <option value="dark">深色模式</option>
+                <option value="light">浅色模式</option>
+            </select>
+        </div>
+        <div class="toolbar-section">
+            <div class="toolbar-title">用户设置</div>
+            <!-- 新增用户名输入 -->
+            <input type="text" id="userNameInput"
+                   style="width: 100%; padding: 6px; background: var(--secondary-bg);
+                              border: 1px solid var(--border-color); color: var(--text-color);"
+                   placeholder="输入用户名">
+            <button class="button" onclick="saveUserName()" style="margin-top: 10px;">保存用户</button>
+            <!-- 原有头像设置保持不变 -->
+            <input type="text" id="avatarPath"
+                   style="width: 100%; padding: 6px; background: var(--secondary-bg);
+                              border: 1px solid var(--border-color); color: var(--text-color);"
+                   placeholder="头像URL">
+            <button class="button" onclick="updateAvatar()" style="margin-top: 10px;">更新头像</button>
+        </div>
+        <div class="toolbar-section">
+            <div class="toolbar-title">搜索功能</div>
+            <!-- 改为开关形式 -->
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+                <span class="toggle-label">搜索面板</span>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="searchPanelToggle" onchange="toggleSearchPanel()">
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+        </div>
+    </div>
+
+    <!-- 右侧工具栏展开条 -->
+    <div class="toolbar-toggle-bar" id="toolbarToggleBar" onclick="toggleToolbar()"
+         style="display: none; cursor: pointer; padding: 10px; background: rgba(0, 0, 0, 0.2); border-radius: 0 10px 10px 0; color: white;">
+        &lt;
+    </div>
+</div>
+
+<!-- 在body内添加错误提示 -->
+<div class="error-toast" id="errorToast"></div>
+
+<!-- 在body底部添加右键菜单 -->
+<div class="context-menu" id="fileContextMenu">
+    <div class="menu-item" onclick="showNewFileModal()">新建文件</div>
+    <div class="menu-item" onclick="createNewFolder()">新建文件夹</div>
+    <div class="menu-divider"></div>
+    <div class="menu-item" onclick="renameFile()">重命名</div>
+    <div class="menu-divider"></div>
+    <div class="menu-item" onclick="deleteFile()">删除</div>
+    <div class="menu-item" onclick="exportFile()">导出为...</div>
+</div>
+
+<!-- 添加审计日志弹窗 -->
+<div class="modal-overlay" id="auditLogModal">
+    <div class="modal-content" style="width: 80vw; height: 80vh; display: flex; flex-direction: column;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h3 style="color: var(--text-color);">操作日志 (共${auditLogs.length}条)</h3>
+            <button class="button danger" onclick="handleClearLogs()" style="margin-left: 20px;">清除日志</button>
+        </div>
+        <div id="auditLogList" style="flex: 1; overflow-y: auto; padding-right: 10px;">
+            <!-- 日志项模板 -->
+            <div class="log-item" style="padding: 12px; margin-bottom: 8px; background: var(--secondary-bg); border-radius: 8px;">
+                <div style="display: flex; justify-content: space-between;">
+                    <span style="color: var(--text-secondary); font-size: 12px;">[时间]</span>
+                    <span style="color: var(--accent-blue); font-weight: 500;">[操作类型]</span>
+                </div>
+                <div style="margin-top: 6px;">[文件名]</div>
+                <div style="color: var(--text-secondary); font-size: 12px; margin-top: 4px;">操作人: [用户]</div>
+            </div>
+        </div>
+        <button class="button" onclick="closeAuditModal()" style="align-self: flex-end; margin-top: 20px;">关闭</button>
+    </div>
+</div>
+
+<!-- 在body末尾添加搜索面板 -->
+<div class="search-panel" id="searchPanel" style="display: none;">
+    <div class="search-panel-header">
+        <div>文本搜索</div>
+        <div class="search-panel-close" onclick="toggleSearchPanel()">×</div>
+    </div>
+    <div class="search-panel-content">
+        <div style="position: relative; margin-bottom: 15px;">
+            <input type="text" id="searchInput"
+                   style="width: 100%;
+                              padding: 8px 40px 8px 15px;
+                              background: var(--search-bg);
+                              border: 1px solid var(--search-border);
+                              color: var(--text-color);
+                              font-size: 14px;
+                              border-radius: 8px;"
+                   placeholder="输入搜索内容...">
+            <div id="searchMatches"
+                 style="position: absolute;
+                            right: 15px;
+                            top: 50%;
+                            transform: translateY(-50%);
+                            font-size: 12px;
+                            color: var(--text-secondary);">
+                0/0
+            </div>
+        </div>
+
+        <div style="display: flex; gap: 15px; margin-top: 10px;">
+            <div style="display: flex; align-items: center;">
+                <span class="toggle-label">区分大小写</span>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="caseSensitiveToggle">
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+            <button class="button" onclick="findNext()" style="padding: 6px 12px;">下一个</button>
+            <button class="button" onclick="findPrev()" style="padding: 6px 12px;">上一个</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const editor = document.getElementById('editor');
+    const status = document.getElementById('status');
+    let timeoutId;
+
+    // 新增文件管理功能
+    let files = JSON.parse(localStorage.getItem('editorFiles')) || [];
+    let currentFile = null;
+
+    // 新增自动保存状态
+    let autoSaveEnabled = true;
+    const autoSaveToggle = document.getElementById('autoSaveToggle');
+
+    // 新增IDE模式状态
+    let ideModeEnabled = false;
+    const ideModeToggle = document.getElementById('ideModeToggle');
+
+    // 新增本地文件操作逻辑
+    let fileHandle = null;
+
+    // 新增历史记录功能
+    let historyTimeout;
+    function recordHistory() {
+        if (!currentFile) return;
+
+        currentFile.history = currentFile.history || [];
+        currentFile.history.push(editor.value);
+
+        // 保留最近50个版本
+        if (currentFile.history.length > 50) {
+            currentFile.history.shift();
+        }
+
+        // 防抖处理，每5秒记录一次
+        clearTimeout(historyTimeout);
+        historyTimeout = setTimeout(() => {
+            localStorage.setItem('editorFiles', JSON.stringify(files));
+        }, 5000);
+    }
+
+    // 新增文件变更检测
+    let lastSavedContent = '';
+
+    function checkFileChange() {
+        if (currentFile && editor.value !== lastSavedContent) {
+            showStatus('检测到未保存的更改');
+            document.title = `* ${currentFile.name} - 现代文本编辑器`;
+        }
+    }
+
+    // 定时检测（每2秒）
+    setInterval(checkFileChange, 2000);
+
+    // 初始化自动保存状态
+    window.addEventListener('load', () => {
+        const savedState = localStorage.getItem('autoSaveEnabled');
+        autoSaveEnabled = savedState !== null ? savedState === 'true' : true;
+        autoSaveToggle.checked = autoSaveEnabled;
+        if (files.length > 0) {
+            currentFile = files[0];
+            editor.value = currentFile.content;
+        }
+        const savedIdeMode = localStorage.getItem('ideModeEnabled');
+        ideModeEnabled = savedIdeMode === 'true';
+        ideModeToggle.checked = ideModeEnabled;
+        initFileList();
+    });
+
+    // 监听开关变化
+    autoSaveToggle.addEventListener('change', (e) => {
+        autoSaveEnabled = e.target.checked;
+        localStorage.setItem('autoSaveEnabled', autoSaveEnabled);
+        showStatus(`自动保存已${autoSaveEnabled ? '启用' : '禁用'}`);
+    });
+
+    // 监听IDE模式开关变化
+    ideModeToggle.addEventListener('change', (e) => {
+        ideModeEnabled = e.target.checked;
+        localStorage.setItem('ideModeEnabled', ideModeEnabled);
+        showStatus(`IDE模式已${ideModeEnabled ? '启用' : '禁用'}`);
+    });
+
+    // 新增右键菜单逻辑
+    let contextMenuFile = null;
+
+    document.addEventListener('click', () => {
+        document.getElementById('fileContextMenu').style.display = 'none';
+    });
+
+    document.getElementById('fileList').addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        const fileItem = e.target.closest('.file-item');
+        if (fileItem) {
+            contextMenuFile = files.find(f => f.id === fileItem.dataset.id);
+            showContextMenu(e.clientX, e.clientY);
+        }
+    });
+
+    function showContextMenu(x, y) {
+        const menu = document.getElementById('fileContextMenu');
+        menu.style.display = 'block';
+        menu.style.left = `${x}px`;
+        menu.style.top = `${y}px`;
+    }
+
+    // 新增文件操作功能
+    function renameFile() {
+        const newName = prompt('请输入新文件名:', contextMenuFile.name);
+        if (newName && newName !== contextMenuFile.name) {
+            contextMenuFile.name = newName;
+            localStorage.setItem('editorFiles', JSON.stringify(files));
+            initFileList();
+            showStatus('文件名已修改');
+        }
+    }
+
+    function deleteFile() {
+        if (confirm(`确定要删除 ${contextMenuFile.name} 吗？`)) {
+            files = files.filter(f => f.id !== contextMenuFile.id);
+            if (currentFile?.id === contextMenuFile.id) {
+                currentFile = null;
+                editor.value = '';
+            }
+            localStorage.setItem('editorFiles', JSON.stringify(files));
+            initFileList();
+            showStatus('文件已删除');
+            logAction('DELETE', contextMenuFile.name);
+        }
+    }
+
+    function exportFile() {
+        const tempFile = currentFile;
+        currentFile = contextMenuFile;
+        downloadFile();
+        currentFile = tempFile;
+    }
+
+    // 初始化文件列表
+    function initFileList() {
+        const fileList = document.getElementById('fileList');
+
+        // 分离文件夹和文件
+        const folders = files.filter(f => f.type === 'folder');
+        const normalFiles = files.filter(f => !f.type || f.type === 'file');
+
+        fileList.innerHTML = [
+            ...folders.map(folder => `
+                    <div class="file-item folder" data-id="${folder.id}">
+                        <span>📁 ${folder.name}</span>
+                    </div>
+                `),
+            ...normalFiles.map(file => `
+                    <div class="file-item ${file.id === currentFile?.id ? 'active' : ''}"
+                         data-id="${file.id}"
+                         onclick="openFile('${file.id}')">
+                        <span>${file.name}</span>
+                        ${file.passwordHash ? '🔒' : ''}
+                    </div>
+                `)
+        ].join('');
+    }
+
+    // 修改新建文件按钮调用方式
+    function showNewFileModal() {
+        document.getElementById('newFileName').value = '';
+        document.getElementById('newFileModal').style.display = 'flex';
+        // 重置格式选择状态
+        document.querySelectorAll('#newFileModal .format-option').forEach(opt => {
+            opt.style.background = opt.dataset.format === 'txt' ?
+                'rgba(255,255,255,0.1)' : 'transparent';
+        });
+    }
+
+    function closeNewFileModal() {
+        document.getElementById('newFileModal').style.display = 'none';
+    }
+
+    // 修改格式选择逻辑
+    let selectedFormat = 'txt';
+    document.querySelectorAll('#newFileModal .format-option').forEach(option => {
+        option.addEventListener('click', function() {
+            selectedFormat = this.dataset.format;
+            document.getElementById('customFormat').value = ''; // 清空自定义输入
+            document.querySelectorAll('#newFileModal .format-option').forEach(opt => {
+                opt.style.background = opt === this ? 'rgba(255,255,255,0.1)' : 'transparent';
+            });
+        });
+    });
+
+    // 监听自定义格式输入
+    document.getElementById('customFormat').addEventListener('input', function(e) {
+        if(e.target.value.trim()) {
+            selectedFormat = e.target.value.replace(/[^a-z0-9]/gi, '').toLowerCase();
+            document.querySelectorAll('#newFileModal .format-option').forEach(opt => {
+                opt.style.background = 'transparent';
+            });
+        }
+    });
+
+    // 更新文件创建逻辑
+    function createCustomFile() {
+        const fileNameInput = document.getElementById('newFileName').value.trim();
+        if (!fileNameInput) {
+            showError('文件名不能为空');
+            return;
+        }
+
+        // 处理自定义格式
+        let finalFormat = selectedFormat;
+        if(document.getElementById('customFormat').value.trim()) {
+            finalFormat = document.getElementById('customFormat').value
+                .replace(/[^a-z0-9]/gi, '')
+                .toLowerCase();
+        }
+
+        // 格式有效性检查
+        if(!finalFormat || finalFormat.length > 6) {
+            showError('格式无效（1-6位字母数字）');
+            return;
+        }
+
+        // 自动添加扩展名（如果用户没有输入）
+        let finalName = fileNameInput;
+        if (!finalName.endsWith(`.${finalFormat}`)) {
+            finalName += `.${finalFormat}`;
+        }
+
+        // 检查文件名是否已存在
+        if (files.some(f => f.name === finalName)) {
+            showError('文件名已存在，请使用其他名称');
+            return;
+        }
+
+        createNewFile(finalFormat, finalName);
+        closeNewFileModal();
+    }
+
+    // 修改原有createNewFile函数
+    async function createNewFile(format, customName = null, password = '') {
+        const fileName = customName || `未命名文件_${files.length + 1}.${format}`;
+        const newFile = {
+            id: Date.now().toString(),
+            name: fileName,
+            content: format === 'hty' ? '' : '', // Initialize content for hty as empty string
+            format: format,
+            history: [],
+            passwordHash: password ? await hashPassword(password) : null
+        };
+        if (format === 'hty') {
+            newFile.content = ''; // Ensure hty content is initialized as empty string
+        }
+
+        files.push(newFile);
+        currentFile = newFile;
+        localStorage.setItem('editorFiles', JSON.stringify(files));
+        editor.value = '';
+        initFileList();
+        showStatus('已创建新文件');
+        logAction('CREATE', fileName);
+    }
+
+    // 密码哈希函数
+    async function hashPassword(password) {
+        const encoder = new TextEncoder();
+        const data = encoder.encode(password);
+        const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+        return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+
+    // 打开文件
+    async function openFile(fileId) {
+        const file = files.find(f => f.id === fileId);
+
+        // 密码验证逻辑
+        if (file?.passwordHash) {
+            const password = prompt('请输入文件密码:');
+            if (!password) {
+                showError('必须输入密码');
+                return; // 阻止未输入密码的访问
+            }
+
+            const inputHash = await hashPassword(password);
+            if (inputHash !== file.passwordHash) {
+                showError('密码错误');
+                return; // 密码错误时终止操作
+            }
+        }
+
+        // 只有通过验证才会执行打开操作
+        if (file) {
+            currentFile = file;
+            if (file.format === 'hty') {
+                switchToCanvasMode();
+                loadCanvasContent(file.content); // Load saved drawing if any
+            } else {
+                switchToEditorMode();
+                editor.value = file.content;
+            }
+            initFileList();
+            logAction('OPEN', file.name); // 记录审计日志
+        }
+    }
+
+    // 显示状态信息
+    function showStatus(message) {
+        status.textContent = message;
+        status.style.display = 'block';
+        setTimeout(() => {
+            status.style.display = 'none';
+        }, 2000);
+    }
+
+    // 修改后的导出功能逻辑
+    let exportFormat = 'current';
+
+    function showExportMenu() {
+        const defaultName = currentFile?.name.replace(/\.[^/.]+$/, '') || '未命名文件';
+        document.getElementById('exportFileName').value = defaultName;
+        document.getElementById('exportModal').style.display = 'flex';
+
+        // 设置默认选中当前格式
+        document.querySelectorAll('.format-option').forEach(option => {
+            option.style.background = option.dataset.format === 'current' ?
+                'rgba(255,255,255,0.1)' : 'transparent';
+        });
+    }
+
+    function closeExportModal() {
+        document.getElementById('exportModal').style.display = 'none';
+    }
+
+    document.querySelectorAll('#exportModal .format-option').forEach(option => {
+        option.addEventListener('click', function() {
+            exportFormat = this.dataset.format;
+            document.querySelectorAll('#exportModal .format-option').forEach(opt => {
+                opt.style.background = opt === this ? 'rgba(255,255,255,0.1)' : 'transparent';
+            });
+        });
+    });
+
+    function handleExport() {
+        const fileNameInput = document.getElementById('exportFileName').value.trim();
+        if (!fileNameInput) {
+            showError('文件名不能为空');
+            return;
+        }
+
+        let finalFormat = exportFormat === 'current' ? currentFile?.format : exportFormat;
+        if (!finalFormat) finalFormat = 'txt';
+
+        let finalName = fileNameInput;
+        if (!finalName.endsWith(`.${finalFormat}`)) {
+            finalName += `.${finalFormat}`;
+        }
+
+        // 格式验证
+        if (finalFormat === 'html' && !validateHTML(editor.value)) {
+            showError('HTML格式错误，请检查未闭合的标签');
+            return;
+        }
+
+        // 直接创建Blob进行下载（不再修改currentFile）
+        const content = currentFile?.format === 'hty' ? getCanvasDataURL() : editor.value; // Get canvas data for hty
+        const blob = new Blob([content], {
+            type: finalFormat === 'html' ? 'text/html' : (finalFormat === 'hty' ? 'image/png' : 'text/plain') // Export hty as png
+        });
+
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = finalName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        showStatus(`已导出: ${finalName}`);
+        closeExportModal();
+    }
+
+    // 恢复原有下载函数逻辑
+    function downloadFile() {
+        if (!currentFile) return showError('没有可导出的文件');
+
+        const content = currentFile?.format === 'hty' ? getCanvasDataURL() : editor.value; // Get canvas data for hty
+        const blob = new Blob([content], {
+            type: currentFile?.format === 'html' ? 'text/html' : (currentFile?.format === 'hty' ? 'image/png' : 'text/plain') // Download hty as png
+        });
+
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = currentFile.name;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        showStatus('已下载');
+    }
+
+    // HTML基础验证
+    function validateHTML(content) {
+        // 检查未闭合标签
+        const tagRegex = /<(\/?[\w\d-]+)(?:\s+[^>]*)?>/g;
+        const stack = [];
+        let match;
+
+        while ((match = tagRegex.exec(content)) !== null) {
+            const tag = match[1].toLowerCase();
+            if(tag.startsWith('/')) {
+                const expected = stack.pop();
+                if(!expected || expected !== tag.slice(1)) {
+                    return false;
+                }
+            } else if(!['br','hr','img','input','meta','link'].includes(tag)) {
+                stack.push(tag);
+            }
+        }
+
+        return stack.length === 0;
+    }
+
+    // 显示错误提示
+    function showError(message) {
+        const toast = document.getElementById('errorToast');
+        toast.textContent = message;
+        toast.style.display = 'block';
+        setTimeout(() => {
+            toast.style.display = 'none';
+        }, 3000);
+    }
+
+    // 修改保存功能
+    function saveFile() {
+        if(currentFile?.format === 'html' && !validateHTML(editor.value)) {
+            showError('无法保存：存在未闭合的HTML标签');
+            return;
+        }
+
+        // 新增内容同步逻辑
+        if (currentFile) {
+            currentFile.content = currentFile.format === 'hty' ? getCanvasDataURL() : editor.value;  // 同步编辑器内容或 canvas data
+            const fileIndex = files.findIndex(f => f.id === currentFile.id);
+            if (fileIndex > -1) {
+                files[fileIndex] = currentFile;  // 更新文件数组中的对应文件
+            }
+        }
+
+        localStorage.setItem('editorFiles', JSON.stringify(files));
+        showStatus('已保存');
+        lastSavedContent = editor.value;
+        document.title = `${currentFile.name} - 现代文本编辑器`;
+    }
+
+    // 新增退出功能
+    function logout() {
+        if(confirm('确定要退出登录吗？')) {
+            // 清除本地存储（如果需要）
+            localStorage.removeItem('editorFiles');
+            // 跳转到登录页
+            window.location.href = 'Login.html';
+        }
+    }
+
+    // 修改编辑器输入处理
+    editor.addEventListener('keydown', (e) => {
+        if (ideModeEnabled && e.key === 'Enter') {
+            e.preventDefault();
+            handleSmartIndent();
+        }
+    });
+
+    // 智能缩进处理函数
+    function handleSmartIndent() {
+        const cursorPos = editor.selectionStart;
+        const textBefore = editor.value.substring(0, cursorPos);
+
+        // 获取当前行起始位置
+        const lineStart = textBefore.lastIndexOf('\n', cursorPos - 1) + 1;
+        const currentLine = textBefore.substring(lineStart);
+
+        // 计算缩进量
+        const indent = currentLine.match(/^\s*/)[0];
+        const newText = '\n' + indent;
+
+        // 插入新内容
+        editor.setRangeText(newText, cursorPos, cursorPos, 'end');
+
+        // 触发输入事件以保持自动保存
+        const event = new Event('input', { bubbles: true });
+        editor.dispatchEvent(event);
+    }
+
+    // 新增本地文件操作逻辑
+    async function handleFileOpen() {
+        try {
+            [fileHandle] = await window.showOpenFilePicker({
+                types: [{
+                    description: '文本文件',
+                    accept: {'text/plain': ['.txt','.html','.md']}
+                }]
+            });
+
+            const file = await fileHandle.getFile();
+            const content = await file.text();
+
+            const newFile = {
+                id: `local_${Date.now()}`,
+                name: file.name,
+                content: content,
+                format: file.name.split('.').pop(),
+                isLocal: true
+            };
+
+            files.push(newFile);
+            currentFile = newFile;
+            editor.value = content;
+            initFileList();
+            showStatus(`已打开本地文件: ${file.name}`);
+        } catch (err) {
+            showError('文件操作已取消');
+        }
+    }
+
+    async function handleFileSave() {
+        if (!currentFile?.isLocal) {
+            return showError('仅支持保存本地文件');
+        }
+
+        try {
+            const writable = await fileHandle.createWritable();
+            await writable.write(editor.value);
+            await writable.close();
+            showStatus('文件已保存');
+        } catch (err) {
+            showError('保存失败，请重试');
+        }
+    }
+
+    // 新增主题切换逻辑
+    function toggleTheme(theme) {
+        document.documentElement.setAttribute('data-theme', theme);
+        localStorage.setItem('editorTheme', theme);
+    }
+
+    // 初始化主题
+    const savedTheme = localStorage.getItem('editorTheme') || 'dark';
+    toggleTheme(savedTheme);
+
+    // 审计日志逻辑
+    let auditLogs = JSON.parse(localStorage.getItem('auditLogs')) || [];
+
+    function logAction(type, fileName) {
+        auditLogs.push({
+            timestamp: new Date().toISOString(),
+            type,
+            fileName,
+            user: localStorage.getItem('currentUser') || '未登录用户'
+        });
+        localStorage.setItem('auditLogs', JSON.stringify(auditLogs));
+    }
+
+    // 显示审计日志
+    function showAuditLog() {
+        const password = prompt('请输入审计密码:');
+        if (password !== 'Admin') {
+            showError('权限不足');
+            return;
+        }
+
+        const logList = document.getElementById('auditLogList');
+        logList.innerHTML = auditLogs.map(log => `
+                <div style="padding: 8px; border-bottom: 1px solid var(--border-color);">
+                    [${new Date(log.timestamp).toLocaleString()}]
+                    ${log.type} ${log.fileName} - 操作人: ${log.user}
+                </div>
+            `).join('');
+        document.getElementById('auditLogModal').style.display = 'flex';
+    }
+
+    function closeAuditModal() {
+        document.getElementById('auditLogModal').style.display = 'none';
+    }
+
+    function updateAvatar() {
+        const newPath = document.getElementById('avatarPath').value;
+        if(newPath) {
+            document.getElementById('userAvatar').src = newPath;
+            localStorage.setItem('userAvatarPath', newPath);
+            showStatus('头像已更新');
+        }
+    }
+
+    // 初始化用户设置
+    const savedAvatarPath = localStorage.getItem('userAvatarPath');
+    if(savedAvatarPath) {
+        document.getElementById('userAvatar').src = savedAvatarPath;
+    }
+
+    // 修改新建文件夹调用方式
+    function createNewFolder() {
+        showNewFolderModal();
+    }
+
+    // 新增文件夹弹窗控制函数
+    function showNewFolderModal() {
+        document.getElementById('folderNameInput').value = '新建文件夹';
+        document.getElementById('newFolderModal').style.display = 'flex';
+    }
+
+    function closeNewFolderModal() {
+        document.getElementById('newFolderModal').style.display = 'none';
+    }
+
+    // 更新文件夹创建逻辑
+    function confirmCreateFolder() {
+        const folderName = document.getElementById('folderNameInput').value.trim();
+        if (!folderName) {
+            showError('文件夹名称不能为空');
+            return;
+        }
+
+        // 检查名称冲突
+        const existingNames = files.filter(f => f.type === 'folder').map(f => f.name);
+        let finalName = folderName;
+        let counter = 1;
+        while (existingNames.includes(finalName)) {
+            finalName = `${folderName} (${counter++})`;
+        }
+
+        const newFolder = {
+            id: `folder_${Date.now()}`,
+            name: finalName,
+            type: 'folder',
+            children: [],
+            created: new Date().toISOString()
+        };
+
+        files.push(newFolder);
+        localStorage.setItem('editorFiles', JSON.stringify(files));
+        initFileList();
+        closeNewFolderModal();
+        showStatus('文件夹已创建');
+        logAction('CREATE_FOLDER', finalName);
+    }
+
+    // 新增行号显示状态
+    let lineNumbersEnabled = false;
+    const lineNumberToggle = document.getElementById('lineNumberToggle');
+    const lineNumbers = document.getElementById('lineNumbers');
+
+    // 初始化行号状态
+    lineNumberToggle.addEventListener('change', function() {
+        lineNumbersEnabled = this.checked;
+        lineNumbers.style.display = lineNumbersEnabled ? 'block' : 'none';
+        updateLineNumbers();
+        localStorage.setItem('lineNumbersEnabled', lineNumbersEnabled);
+    });
+
+    // 初始化时读取存储状态
+    const savedLineNumbers = localStorage.getItem('lineNumbersEnabled') === 'true';
+    lineNumberToggle.checked = savedLineNumbers;
+    lineNumbers.style.display = savedLineNumbers ? 'block' : 'none';
+
+    // 更新行号逻辑
+    function updateLineNumbers() {
+        if (!lineNumbersEnabled) return;
+
+        const lines = editor.value.split('\n');
+        const cursorPos = editor.selectionStart;
+        const textBeforeCursor = editor.value.substr(0, cursorPos);
+        const currentLine = textBeforeCursor.split('\n').length;
+
+        lineNumbers.innerHTML = lines
+            .map((_, i) => `
+                    <div class="${i + 1 === currentLine ? 'active-line' : ''}">
+                        ${i + 1}
+                    </div>
+                `).join('');
+    }
+
+    // 添加节流滚动处理
+    let isScrolling = false;
+    editor.addEventListener('scroll', () => {
+        if (!isScrolling) {
+            window.requestAnimationFrame(() => {
+                lineNumbers.scrollTop = editor.scrollTop;
+                isScrolling = false;
+            });
+            isScrolling = true;
+        }
+    });
+
+    // 添加窗口大小变化监听
+    window.addEventListener('resize', () => {
+        lineNumbers.style.height = `${editor.offsetHeight}px`;
+        const lineHeight = getComputedStyle(editor).lineHeight;
+        lineNumbers.style.lineHeight = lineHeight; // 同步行高
+    });
+
+    // 监听编辑器输入
+    editor.addEventListener('input', () => {
+        updateLineNumbers();
+        // ... existing input handling ...
+    });
+
+    // 新增搜索相关状态
+    let searchMatches = [];
+    let currentMatchIndex = -1;
+    let caseSensitive = false;
+
+    // 新增搜索面板交互逻辑
+    let dragData = {
+        isDragging: false,
+        startX: 0,
+        startY: 0,
+        initialX: 0,
+        initialY: 0
+    };
+
+    function toggleSearchPanel() {
+        const isVisible = searchPanel.style.display === 'block';
+        searchPanel.style.display = isVisible ? 'none' : 'block';
+        searchPanelToggle.checked = !isVisible;
+
+        if (!isVisible) {
+            searchInput.focus();
+        }
+        localStorage.setItem('searchPanelState', !isVisible);
+    }
+
+    // 初始化时读取面板状态
+    const savedPanelState = localStorage.getItem('searchPanelState') === 'true';
+    searchPanelToggle.checked = savedPanelState;
+    searchPanel.style.display = savedPanelState ? 'block' : 'none';
+
+    // 修改快捷键处理
+    editor.addEventListener('keydown', (e) => {
+        if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+            e.preventDefault();
+            searchPanelToggle.click(); // 切换开关状态
+        }
+    });
+
+    // 执行搜索
+    function performSearch() {
+        const searchText = searchInput.value;
+        if (!searchText) {
+            clearHighlights();
+            return;
+        }
+
+        const flags = caseSensitive ? 'g' : 'gi';
+        const regex = new RegExp(escapeRegExp(searchText), flags);
+
+        // 获取编辑器内容
+        const content = editor.value;
+        searchMatches = [];
+
+        // 查找所有匹配项
+        let match;
+        while ((match = regex.exec(content)) !== null) {
+            searchMatches.push({
+                start: match.index,
+                end: match.index + match[0].length
+            });
+        }
+
+        updateHighlights();
+        updateMatchesDisplay();
+    }
+
+    // 更新高亮显示
+    function updateHighlights() {
+        clearHighlights();
+
+        const content = editor.value;
+        let highlightedContent = content;
+        let offset = 0;
+
+        searchMatches.forEach((match, index) => {
+            const start = match.start + offset;
+            const end = match.end + offset;
+            const highlightClass = index === currentMatchIndex ?
+                'current-highlight' : 'highlight';
+
+            highlightedContent =
+                highlightedContent.slice(0, start) +
+                `<span class="${highlightClass}">` +
+                highlightedContent.slice(start, end) +
+                '</span>' +
+                highlightedContent.slice(end);
+
+            offset += 27 + highlightClass.length; // 补偿插入的HTML长度
+        });
+
+        // 使用临时div保持滚动位置
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = highlightedContent;
+        editor.nextSibling.innerHTML = tempDiv.innerHTML;
+    }
+
+    // 清除高亮
+    function clearHighlights() {
+        const spans = editor.nextSibling.querySelectorAll('span');
+        spans.forEach(span => {
+            const parent = span.parentNode;
+            while (span.firstChild) parent.insertBefore(span.firstChild, span);
+            parent.removeChild(span);
+        });
+        currentMatchIndex = -1;
+    }
+
+    // 更新匹配计数显示
+    function updateMatchesDisplay() {
+        const total = searchMatches.length;
+        const current = total > 0 ? currentMatchIndex + 1 : 0;
+        matchesDisplay.textContent = `${current}/${total}`;
+    }
+
+    // 查找下一个
+    function findNext() {
+        if (searchMatches.length === 0) return;
+        currentMatchIndex = (currentMatchIndex + 1) % searchMatches.length;
+        scrollToMatch();
+        updateHighlights();
+    }
+
+    // 查找上一个
+    function findPrev() {
+        if (searchMatches.length === 0) return;
+        currentMatchIndex = (currentMatchIndex - 1 + searchMatches.length) % searchMatches.length;
+        scrollToMatch();
+        updateHighlights();
+    }
+
+    // 滚动到当前匹配项
+    function scrollToMatch() {
+        if (currentMatchIndex === -1) return;
+
+        const match = searchMatches[currentMatchIndex];
+        const line = editor.value.substr(0, match.start).split('\n').length - 1;
+        const lineHeight = parseInt(getComputedStyle(editor).lineHeight);
+        editor.scrollTop = line * lineHeight - editor.offsetHeight / 2;
+    }
+
+    // 工具函数：转义正则特殊字符
+    function escapeRegExp(string) {
+        return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    }
+
+    // 事件监听
+    searchInput.addEventListener('input', () => {
+        performSearch();
+    });
+
+    caseSensitiveToggle.addEventListener('change', function() {
+        caseSensitive = this.checked;
+        performSearch();
+    });
+
+    // 修改拖动处理逻辑
+    searchPanel.addEventListener('mousedown', (e) => {
+        // 仅允许通过标题栏拖动
+        const header = e.target.closest('.search-panel-header');
+        if (!header) return;
+
+        dragData = {
+            isDragging: true,
+            startX: e.clientX,
+            startY: e.clientY,
+            initialX: searchPanel.offsetLeft,
+            initialY: searchPanel.offsetTop
+        };
+
+        document.addEventListener('mousemove', handleDrag);
+        document.addEventListener('mouseup', stopDrag);
+    });
+
+    function handleDrag(e) {
+        if (!dragData.isDragging) return;
+
+        const dx = e.clientX - dragData.startX;
+        const dy = e.clientY - dragData.startY;
+
+        searchPanel.style.left = `${dragData.initialX + dx}px`;
+        searchPanel.style.top = `${dragData.initialY + dy}px`;
+    }
+
+    function stopDrag() {
+        dragData.isDragging = false;
+        document.removeEventListener('mousemove', handleDrag);
+        document.removeEventListener('mouseup', stopDrag);
+    }
+
+    // 新增字体控制逻辑
+    function updateFontSize(size) {
+        document.documentElement.style.setProperty('--editor-font-size', `${size}px`);
+        localStorage.setItem('editorFontSize', size);
+    }
+
+    function updateFontFamily(font) {
+        document.documentElement.style.setProperty('--editor-font-family', font);
+        localStorage.setItem('editorFontFamily', font);
+    }
+
+    // 初始化字体设置
+    const savedFontSize = localStorage.getItem('editorFontSize') || '16';
+    const savedFontFamily = localStorage.getItem('editorFontFamily') || 'system-ui';
+    document.getElementById('fontSizeSelect').value = savedFontSize;
+    document.getElementById('fontFamilySelect').value = savedFontFamily;
+    updateFontSize(savedFontSize);
+    updateFontFamily(savedFontFamily);
+
+    // 新增清除日志处理函数
+    function handleClearLogs() {
+        const password = prompt('请输入管理员密码:');
+        if (password !== 'Admin') {
+            showError('密码错误');
+            return;
+        }
+
+        auditLogs = [];
+        localStorage.setItem('auditLogs', JSON.stringify(auditLogs));
+        refreshLogList();
+        showStatus('日志已清除');
+    }
+
+    // 修改后的日志刷新函数
+    function refreshLogList() {
+        const logList = document.getElementById('auditLogList');
+        logList.innerHTML = auditLogs.map(log => `
+                <div class="log-item" style="padding: 12px; margin-bottom: 8px; background: var(--secondary-bg); border-radius: 8px;">
+                    <div style="display: flex; justify-content: space-between;">
+                        <span style="color: var(--text-secondary); font-size: 12px;">
+                            ${new Date(log.timestamp).toLocaleString()}
+                        </span>
+                        <span style="color: var(--accent-blue); font-weight: 500;">
+                            ${log.type.replace(/_/g, ' ')}
+                        </span>
+                    </div>
+                    <div style="margin-top: 6px;">${log.fileName || '系统操作'}</div>
+                    <div style="color: var(--text-secondary); font-size: 12px; margin-top: 4px;">
+                        操作人: ${log.user || '未登录用户'}
+                    </div>
+                </div>
+            `).join('');
+    }
+
+    // 修改用户名保存逻辑
+    function saveUserName() {
+        const userName = document.getElementById('userNameInput').value.trim();
+        if (!userName) {
+            showError('用户名不能为空');
+            return;
+        }
+        localStorage.setItem('currentUser', userName);
+        document.getElementById('username').textContent = userName; // 同步更新左上角显示
+        showStatus('用户已设置为: ' + userName);
+    }
+
+    // 初始化时更新左上角用户名
+    const currentUser = localStorage.getItem('currentUser') || '未登录用户';
+    document.getElementById('userNameInput').value = currentUser;
+    document.getElementById('username').textContent = currentUser;
+
+    // 新增拼写检查开关处理函数
+    function toggleSpellCheck() {
+        const enabled = document.getElementById('spellCheckToggle').checked;
+        editor.spellcheck = enabled;
+        localStorage.setItem('spellCheckEnabled', enabled);
+        showStatus(`拼写检查已${enabled ? '启用' : '禁用'}`);
+    }
+
+    // 初始化拼写检查状态
+    const savedSpellCheck = localStorage.getItem('spellCheckEnabled');
+    const spellCheckEnabled = savedSpellCheck !== null ? savedSpellCheck === 'true' : true;
+    document.getElementById('spellCheckToggle').checked = spellCheckEnabled;
+    editor.spellcheck = spellCheckEnabled;
+
+    let sidebarExpanded = false;
+    let toolbarExpanded = false;
+
+    function toggleSidebar() {
+        const container = document.querySelector('.container');
+        const button = document.getElementById('sidebarToggleButton');
+        const sidebarToggleBar = document.getElementById('sidebarToggleBar');
+
+        if (sidebarExpanded) {
+            container.classList.remove('sidebar-expanded');
+            sidebarExpanded = false;
+            button.textContent = '展开左侧';
+            sidebarToggleBar.style.display = 'block'; // 显示展开条
+        } else {
+            // 如果右侧已展开，先折叠右侧
+            if (toolbarExpanded) {
+                toggleToolbar();
+            }
+            container.classList.add('sidebar-expanded');
+            sidebarExpanded = true;
+            button.textContent = '折叠左侧';
+            sidebarToggleBar.style.display = 'none'; // 隐藏展开条
+        }
+    }
+
+    function toggleToolbar() {
+        const container = document.querySelector('.container');
+        const button = document.getElementById('toolbarToggleButton');
+        const toolbarToggleBar = document.getElementById('toolbarToggleBar');
+        const toolbar = document.querySelector('.toolbar'); // 获取toolbar元素
+
+        if (toolbarExpanded) {
+            container.classList.remove('toolbar-expanded');
+            toolbarExpanded = false;
+            button.textContent = '展开右侧';
+            toolbarToggleBar.style.display = 'block'; // 显示展开条
+        } else {
+            // 如果左侧已展开，先折叠左侧
+            if (sidebarExpanded) {
+                toggleSidebar();
+            }
+            container.classList.add('toolbar-expanded');
+            toolbarExpanded = true;
+            button.textContent = '折叠右侧';
+            toolbarToggleBar.style.display = 'none'; // 隐藏展开条
+        }
+    }
+
+    // 页面加载时检查屏幕宽度
+    window.addEventListener('load', () => {
+        if (window.innerWidth <= 768) {
+            // 默认折叠左右两侧
+            const container = document.querySelector('.container');
+            container.classList.remove('sidebar-expanded', 'toolbar-expanded');
+            sidebarExpanded = false;
+            toolbarExpanded = false;
+
+            // 手机模式下显示展开条
+            document.getElementById('sidebarToggleBar').style.display = 'block';
+            document.getElementById('toolbarToggleBar').style.display = 'block';
+        }
+    });
+
+    // Canvas drawing variables
+    const htyCanvas = document.getElementById('htyCanvas');
+    const ctx = htyCanvas.getContext('2d');
+    let drawing = false;
+    let currentPos = { x: 0, y: 0 };
+    let lastPos = { x: 0, y: 0 };
+    let penColor = '#000000'; // Default pen color black
+    let zoomLevel = 1; // Initialize zoom level to 1 (no zoom)
+
+    function switchToCanvasMode() {
+        editor.style.display = 'none';
+        lineNumbers.style.display = 'none';
+        htyCanvas.style.display = 'block';
+        htyCanvas.style.backgroundColor = 'white'; // Set canvas background to white
+    }
+
+    function switchToEditorMode() {
+        editor.style.display = 'block';
+        lineNumbers.style.display = lineNumberToggle.checked ? 'block' : 'none';
+        htyCanvas.style.display = 'none';
+        document.querySelector('.editor-container').style.backgroundColor = ''; // Revert to default background
+    }
+
+    htyCanvas.addEventListener('mousedown', startDrawing);
+    htyCanvas.addEventListener('mouseup', stopDrawing);
+    htyCanvas.addEventListener('mouseout', stopDrawing);
+    htyCanvas.addEventListener('mousemove', draw);
+    htyCanvas.addEventListener('wheel', handleWheelZoom); // Add wheel event listener
+
+    function getMousePos(canvas, evt) {
+        const rect = canvas.getBoundingClientRect();
+        return {
+            x: (evt.clientX - rect.left) / zoomLevel, // 除以 zoomLevel
+            y: (evt.clientY - rect.top) / zoomLevel  // 除以 zoomLevel
+        };
+    }
+
+    function startDrawing(e) {
+        drawing = true;
+        lastPos = getMousePos(htyCanvas, e);
+    }
+
+    function stopDrawing() {
+        drawing = false;
+    }
+
+    function draw(e) {
+        if (!drawing) return;
+
+        currentPos = getMousePos(htyCanvas, e);
+
+        ctx.beginPath();
+        ctx.moveTo(lastPos.x, lastPos.y);
+        ctx.lineTo(currentPos.x, currentPos.y);
+        ctx.strokeStyle = penColor; // Use current pen color
+        ctx.lineWidth = 2; // Default line width
+        ctx.lineCap = 'round';
+        ctx.stroke();
+
+        lastPos = currentPos;
+    }
+
+    function handleWheelZoom(e) {
+        e.preventDefault(); // Prevent page scroll
+
+        const zoomSpeed = 0.1;
+        if (e.deltaY < 0) {
+            zoomLevel += zoomSpeed; // Zoom in
+        } else {
+            zoomLevel -= zoomSpeed; // Zoom out
+        }
+        zoomLevel = Math.max(0.1, zoomLevel); // Prevent zoom level from becoming too small
+
+        const mousePos = getMousePos(htyCanvas, e); // Get mouse position
+        const mouseX = mousePos.x;
+        const mouseY = mousePos.y;
+
+        ctx.clearRect(0, 0, htyCanvas.width, htyCanvas.height); // Clear canvas
+
+        // Apply zoom and translate to zoom around mouse cursor
+        ctx.translate(mouseX, mouseY);       // Translate to mouse position
+        ctx.scale(zoomLevel, zoomLevel);     // Scale around mouse position
+        ctx.translate(-mouseX, -mouseY);      // Translate back
+
+        loadCanvasContent(currentFile.content); // Redraw the content at new zoom level
+    }
+
+    function getCanvasDataURL() {
+        return htyCanvas.toDataURL('image/png');
+    }
+
+    function loadCanvasContent(dataURL) {
+        if (!dataURL) return;
+        const img = new Image();
+        img.onload = function() {
+            ctx.drawImage(img, 0, 0);
+        };
+        img.src = dataURL;
+    }
+
+    // Pen color change listener
+    document.getElementById('penColorPicker').addEventListener('input', (e) => {
+        penColor = e.target.value;
+    });
+
+    // 获取按钮元素
+    const htmlIdeButton = document.getElementById('htmlIdeButton');
+
+    // 添加点击事件监听器
+    htmlIdeButton.addEventListener('click', () => {
+        // 跳转到 HTML IDE.html
+        window.location.href = 'HTML IDE.html';
+    });
+</script>
+    <!-- HTML IDE 按钮 -->
+    <button id="htmlIdeButton" class="bottom-left-button">HTML IDE</button>
+</body>
+</html>

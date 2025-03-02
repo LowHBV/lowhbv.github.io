@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IDE Interface</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Consolas', monospace;
+        }
+
+        :root {
+            /* 深色主题变量 */
+            --bg-primary: #1e1e1e;
+            --bg-secondary: #252526;
+            --bg-tertiary: #2d2d2d;
+            --text-primary: #d4d4d4;
+            --text-secondary: #858585;
+            --border-color: #333;
+            --accent-color: #007acc;
+            --hover-color: #3d3d3d;
+            --delete-color: #e74c3c;
+            --delete-hover: #c0392b;
+        }
+
+        /* 浅色主题 */
+        [data-theme="light"] {
+            --bg-primary: #ffffff;
+            --bg-secondary: #f5f5f5;
+            --bg-tertiary: #e8e8e8;
+            --text-primary: #000000;
+            --text-secondary: #666666;
+            --border-color: #cccccc;
+            --accent-color: #0078d4;
+            --hover-color: #e0e0e0;
+            --delete-color: #e74c3c;
+            --delete-hover: #c0392b;
+        }
+
+        /* 图片预览区域 */
+        .image-preview {
+            display: none;
+            flex: 1;
+            background-color: var(--bg-primary);
+            overflow: auto;
+            position: relative;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .image-preview img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+        .image-preview.show {
+            display: flex;
+        }
+        body {
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* 顶部工具栏 */
+        .toolbar {
+            background-color: var(--bg-tertiary);
+            padding: 8px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .toolbar-item {
+            color: var(--text-primary);
+            padding: 4px 8px;
+            font-size: 12px;
+            cursor: pointer;
+            border-radius: 3px;
+        }
+
+        .toolbar-item:hover {
+            background-color: var(--hover-color);
+        }
+
+        /* Run 按钮组样式 */
+        .run-group {
+            margin-left: auto;
+            display: flex;
+            gap: 5px;
+        }
+
+        .run-button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 4px 8px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .run-button:hover {
+            background-color: #45a049;
+        }
+
+        .debug-button {
+            background-color: #007acc;
+            color: white;
+            padding: 4px 8px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .debug-button:hover {
+            background-color: #0066aa;
+        }
+
+        /* 删除按钮样式 */
+        .delete-button {
+            background-color: var(--delete-color);
+            color: white;
+            padding: 4px 8px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 12px;
+            display: none;
+            align-items: center;
+            gap: 4px;
+            margin-left: 5px;
+        }
+
+        .delete-button:hover {
+            background-color: var(--delete-hover);
+        }
+
+        .file-item:hover .delete-button {
+            display: inline-flex;
+        }
+
+        /* 文件类型图标 */
+        .file-icon {
+            margin-right: 5px;
+            font-size: 14px;
+        }
+                /* 设置按钮样式 */
+                .settings-button {
+            padding: 4px 8px;
+            background: none;
+            border: none;
+            color: var(--text-primary);
+            cursor: pointer;
+            font-size: 16px;
+            margin-left: 5px;
+        }
+
+        .settings-button:hover {
+            background-color: var(--hover-color);
+            border-radius: 3px;
+        }
+
+        /* 设置面板 */
+        .settings-panel {
+            display: none;
+            position: absolute;
+            right: 10px;
+            top: 40px;
+            background-color: var(--bg-tertiary);
+            padding: 15px;
+            border-radius: 5px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+            z-index: 1000;
+        }
+
+        .settings-panel.show {
+            display: block;
+        }
+
+        .settings-item {
+            margin-bottom: 10px;
+        }
+
+        .settings-item label {
+            display: block;
+            margin-bottom: 5px;
+            color: var(--text-primary);
+            font-size: 12px;
+        }
+
+        .settings-item select {
+            width: 100%;
+            padding: 4px;
+            background-color: var(--bg-secondary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 3px;
+        }
+
+        /* 行号区域 */
+        .line-numbers {
+            position: absolute;
+            left: 0;
+            top: 0;
+            padding: 10px 5px;
+            background-color: var(--bg-primary);
+            color: var(--text-secondary);
+            font-size: 14px;
+            user-select: none;
+            text-align: right;
+            width: 40px;
+        }
+
+        .line-number {
+            display: block;
+            line-height: 1.5;
+        }
+
+        /* 文件树区域 */
+        .file-explorer {
+            width: 250px;
+            background-color: var(--bg-secondary);
+            padding: 10px;
+            overflow-y: auto;
+            user-select: none;
+        }
+
+        .folder {
+            margin-left: 15px;
+        }
+
+        .file-item {
+            padding: 3px 5px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            font-size: 13px;
+            color: var(--text-primary);
+        }
+
+        .file-item:hover {
+            background-color: var(--hover-color);
+        }
+
+        .file-item.active {
+            background-color: var(--accent-color);
+        }
+
+        .file-name {
+            flex: 1;
+        }
+                /* 编辑器区域 */
+                .editor {
+            flex: 1;
+            background-color: var(--bg-primary);
+            overflow: auto;
+            position: relative;
+            display: none;
+        }
+
+        .editor.show {
+            display: block;
+        }
+
+        .editor textarea {
+            width: 100%;
+            height: 100%;
+            background-color: transparent;
+            color: var(--text-primary);
+            border: none;
+            padding: 10px 10px 10px 45px;
+            font-family: 'Consolas', monospace;
+            font-size: 14px;
+            line-height: 1.5;
+            resize: none;
+            outline: none;
+            tab-size: 4;
+        }
+
+        /* 控制台区域 */
+        .console {
+            background-color: var(--bg-primary);
+            border-top: 1px solid var(--border-color);
+            padding: 10px;
+            font-family: 'Consolas', monospace;
+            font-size: 12px;
+            height: 150px;
+            overflow-y: auto;
+            display: none;
+        }
+
+        .console.show {
+            display: block;
+        }
+
+        .console-output {
+            color: var(--text-primary);
+            white-space: pre-wrap;
+        }
+
+        .console-error {
+            color: #f44336;
+        }
+
+        .console-debug {
+            color: #2196F3;
+        }
+
+        /* 右侧面板 */
+        .right-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* 主要内容区域 */
+        .main-content {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        /* 状态栏 */
+        .statusbar {
+            background-color: var(--accent-color);
+            padding: 4px 10px;
+            font-size: 12px;
+            display: flex;
+            justify-content: space-between;
+            color: white;
+        }
+
+        /* 下拉菜单 */
+        .dropdown {
+            position: relative;
+            display: inline-block;
+        }
+
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            background-color: var(--bg-tertiary);
+            min-width: 160px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+            z-index: 1;
+            border-radius: 3px;
+        }
+
+        .dropdown-content a {
+            color: var(--text-primary);
+            padding: 8px 12px;
+            text-decoration: none;
+            display: block;
+            font-size: 12px;
+        }
+
+        .dropdown-content a:hover {
+            background-color: var(--hover-color);
+        }
+
+        .show {
+            display: block;
+        }
+
+        .file-input {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <input type="file" id="fileInput" class="file-input" multiple accept="*/*">
+    <div class="toolbar">
+        <div class="dropdown">
+            <span class="toolbar-item" onclick="toggleDropdown('fileDropdown')">File</span>
+            <div id="fileDropdown" class="dropdown-content">
+                <a href="#" onclick="document.getElementById('fileInput').click()">Open File</a>
+                <a href="#" onclick="saveFile()">Save</a>
+                <a href="#">Exit</a>
+            </div>
+        </div>
+        <div class="dropdown">
+            <span class="toolbar-item" onclick="toggleDropdown('editDropdown')">Edit</span>
+            <div id="editDropdown" class="dropdown-content">
+                <a href="#" onclick="cutText()">Cut</a>
+                <a href="#" onclick="copyText()">Copy</a>
+                <a href="#" onclick="pasteText()">Paste</a>
+            </div>
+        </div>
+        <div class="dropdown">
+            <span class="toolbar-item" onclick="toggleDropdown('runDropdown')">Run</span>
+            <div id="runDropdown" class="dropdown-content">
+                <a href="#" onclick="runCode()">▶ Run</a>
+                <a href="#" onclick="debugCode()">🐞 Debug</a>
+            </div>
+        </div>
+        <span class="toolbar-item">View</span>
+        <span class="toolbar-item">Help</span>
+        <div class="run-group">
+            <button class="run-button" onclick="runCode()">▶ Run</button>
+            <button class="debug-button" onclick="debugCode()">🐞 Debug</button>
+        </div>
+        <button class="settings-button" onclick="toggleSettings()">⚙️</button>
+    </div>
+
+    <!-- 设置面板 -->
+    <div class="settings-panel" id="settingsPanel">
+        <div class="settings-item">
+            <label>Theme</label>
+            <select onchange="changeTheme(this.value)">
+                <option value="dark">Dark</option>
+                <option value="light">Light</option>
+            </select>
+        </div>
+        <div class="settings-item">
+            <label>Font Size</label>
+            <select onchange="changeFontSize(this.value)">
+                <option value="12">12px</option>
+                <option value="14" selected>14px</option>
+                <option value="16">16px</option>
+                <option value="18">18px</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="file-explorer" id="fileExplorer">
+            <!-- 文件树将由 JavaScript 动态生成 -->
+        </div>
+
+        <div class="right-panel">
+            <div class="editor" id="editor">
+                <div class="line-numbers" id="lineNumbers"></div>
+                <textarea id="codeEditor" spellcheck="false" wrap="off" onscroll="syncScroll()" onkeyup="updateLineNumbers()"></textarea>
+            </div>
+            <div class="image-preview" id="imagePreview">
+                <!-- 图片预览区域 -->
+            </div>
+            <div class="console" id="console">
+                <div class="console-output" id="consoleOutput"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="statusbar">
+        <span>UTF-8</span>
+        <span id="fileType">Text</span>
+        <span id="cursorPosition">Ln 1, Col 1</span>
+    </div>
+    <script>
+        // 文件树数据结构
+        let fileTree = {
+            name: 'OpenXylitol-master',
+            type: 'folder',
+            children: []
+        };
+
+        // 支持的图片格式
+        const imageExtensions = ['.png', '.jpg', '.jpeg', '.gif', '.bmp', '.webp', '.svg'];
+
+        // 检查文件是否为图片
+        function isImageFile(filename) {
+            return imageExtensions.some(ext => filename.toLowerCase().endsWith(ext));
+        }
+
+        // 获取文件图标
+        function getFileIcon(filename) {
+            if (isImageFile(filename)) return '🖼️';
+            const extension = filename.split('.').pop()?.toLowerCase();
+            const icons = {
+                'js': '📜',
+                'html': '🌐',
+                'css': '🎨',
+                'json': '📋',
+                'md': '📝',
+                'txt': '📄',
+                'pdf': '📕',
+                'doc': '📘',
+                'docx': '📘',
+                'xls': '📗',
+                'xlsx': '📗',
+                'ppt': '📙',
+                'pptx': '📙',
+                'zip': '📦',
+                'rar': '📦',
+                '7z': '📦'
+            };
+            return icons[extension] || '📄';
+        }
+
+        // 设置面板控制
+        function toggleSettings() {
+            const panel = document.getElementById('settingsPanel');
+            panel.classList.toggle('show');
+        }
+
+        // 主题切换
+        function changeTheme(theme) {
+            document.body.setAttribute('data-theme', theme);
+        }
+
+        // 字体大小更改
+        function changeFontSize(size) {
+            const editor = document.getElementById('codeEditor');
+            const lineNumbers = document.getElementById('lineNumbers');
+            editor.style.fontSize = size + 'px';
+            lineNumbers.style.fontSize = size + 'px';
+            updateLineNumbers();
+        }
+
+        // 编辑功能
+        function cutText() {
+            const editor = document.getElementById('codeEditor');
+            const selectedText = editor.value.substring(editor.selectionStart, editor.selectionEnd);
+            if (selectedText) {
+                navigator.clipboard.writeText(selectedText).then(() => {
+                    const start = editor.selectionStart;
+                    editor.value = editor.value.slice(0, editor.selectionStart) + 
+                                 editor.value.slice(editor.selectionEnd);
+                    editor.selectionStart = editor.selectionEnd = start;
+                    updateLineNumbers();
+                });
+            }
+        }
+
+        function copyText() {
+            const editor = document.getElementById('codeEditor');
+            const selectedText = editor.value.substring(editor.selectionStart, editor.selectionEnd);
+            if (selectedText) {
+                navigator.clipboard.writeText(selectedText);
+            }
+        }
+
+        function pasteText() {
+            const editor = document.getElementById('codeEditor');
+            navigator.clipboard.readText().then(text => {
+                const start = editor.selectionStart;
+                editor.value = editor.value.slice(0, editor.selectionStart) + 
+                             text +
+                             editor.value.slice(editor.selectionEnd);
+                editor.selectionStart = editor.selectionEnd = start + text.length;
+                updateLineNumbers();
+            });
+        }
+                // 删除文件
+                function deleteFile(fileName) {
+            fileTree.children = fileTree.children.filter(file => file.name !== fileName);
+            updateFileExplorer();
+            // 如果当前打开的是被删除的文件，清空编辑器
+            const currentFileName = document.querySelector('.file-item.active')?.querySelector('.file-name')?.textContent;
+            if (currentFileName === fileName) {
+                document.getElementById('codeEditor').value = '';
+                document.getElementById('imagePreview').innerHTML = '';
+                updateLineNumbers();
+            }
+        }
+
+        // 创建文件树项目
+        function createFileItem(file, isFolder = false) {
+            const item = document.createElement('div');
+            item.className = 'file-item';
+            
+            const icon = document.createElement('span');
+            icon.className = 'file-icon';
+            icon.textContent = isFolder ? '📁' : getFileIcon(file.name);
+            
+            const nameSpan = document.createElement('span');
+            nameSpan.className = 'file-name';
+            nameSpan.textContent = file.name;
+            
+            const deleteBtn = document.createElement('button');
+            deleteBtn.className = 'delete-button';
+            deleteBtn.innerHTML = '🗑️';
+            deleteBtn.onclick = (e) => {
+                e.stopPropagation();
+                if (confirm('Are you sure you want to delete this file?')) {
+                    deleteFile(file.name);
+                }
+            };
+            
+            item.appendChild(icon);
+            item.appendChild(nameSpan);
+            if (!isFolder) {
+                item.appendChild(deleteBtn);
+            }
+
+            return item;
+        }
+
+        // 处理文件选择
+        document.getElementById('fileInput').addEventListener('change', (e) => {
+            const files = Array.from(e.target.files);
+            files.forEach(file => {
+                if (isImageFile(file.name)) {
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                        fileTree.children.push({
+                            name: file.name,
+                            type: 'file',
+                            content: event.target.result,
+                            isImage: true
+                        });
+                        updateFileExplorer();
+                    };
+                    reader.readAsDataURL(file);
+                } else {
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                        fileTree.children.push({
+                            name: file.name,
+                            type: 'file',
+                            content: event.target.result,
+                            isImage: false
+                        });
+                        updateFileExplorer();
+                    };
+                    reader.readAsText(file);
+                }
+            });
+        });
+
+        // 显示文件内容
+        function showFileContent(file) {
+            const editor = document.getElementById('editor');
+            const imagePreview = document.getElementById('imagePreview');
+            const codeEditor = document.getElementById('codeEditor');
+            const fileType = document.getElementById('fileType');
+
+            if (file.isImage) {
+                editor.classList.remove('show');
+                imagePreview.classList.add('show');
+                imagePreview.innerHTML = `<img src="${file.content}" alt="${file.name}">`;
+                fileType.textContent = 'Image';
+            } else {
+                editor.classList.add('show');
+                imagePreview.classList.remove('show');
+                codeEditor.value = file.content || '';
+                updateLineNumbers();
+                fileType.textContent = file.name.split('.').pop()?.toUpperCase() || 'Text';
+            }
+        }
+                // 更新文件浏览器显示
+                function updateFileExplorer() {
+            const explorer = document.getElementById('fileExplorer');
+            explorer.innerHTML = '';
+            
+            function renderTree(node, container) {
+                const item = createFileItem(node, node.type === 'folder');
+                container.appendChild(item);
+
+                if (node.type === 'folder' && node.children) {
+                    const folder = document.createElement('div');
+                    folder.className = 'folder';
+                    container.appendChild(folder);
+                    node.children.forEach(child => renderTree(child, folder));
+                }
+
+                if (node.type === 'file') {
+                    item.onclick = () => {
+                        document.querySelectorAll('.file-item').forEach(fi => fi.classList.remove('active'));
+                        item.classList.add('active');
+                        showFileContent(node);
+                    };
+                }
+            }
+
+            renderTree(fileTree, explorer);
+        }
+
+        // 更新行号显示
+        function updateLineNumbers() {
+            const textarea = document.getElementById('codeEditor');
+            const lineNumbers = document.getElementById('lineNumbers');
+            const lines = textarea.value.split('\n');
+            
+            lineNumbers.innerHTML = lines.map((_, i) => 
+                `<span class="line-number">${i + 1}</span>`
+            ).join('');
+
+            const cursorPosition = textarea.selectionStart;
+            const textBeforeCursor = textarea.value.substring(0, cursorPosition);
+            const line = textBeforeCursor.split('\n').length;
+            const col = cursorPosition - textBeforeCursor.lastIndexOf('\n');
+            document.getElementById('cursorPosition').textContent = `Ln ${line}, Col ${col}`;
+        }
+
+        // 同步滚动
+        function syncScroll() {
+            const textarea = document.getElementById('codeEditor');
+            const lineNumbers = document.getElementById('lineNumbers');
+            lineNumbers.scrollTop = textarea.scrollTop;
+        }
+
+        // 保存文件
+        function saveFile() {
+            const activeFile = document.querySelector('.file-item.active');
+            if (!activeFile) return;
+
+            const fileName = activeFile.querySelector('.file-name').textContent;
+            const isImage = isImageFile(fileName);
+            
+            if (isImage) {
+                const img = document.querySelector('#imagePreview img');
+                if (img) {
+                    const a = document.createElement('a');
+                    a.href = img.src;
+                    a.download = fileName;
+                    a.click();
+                }
+            } else {
+                const content = document.getElementById('codeEditor').value;
+                const blob = new Blob([content], { type: 'text/plain' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = fileName;
+                a.click();
+                URL.revokeObjectURL(url);
+            }
+        }
+
+        // 运行代码
+        function runCode() {
+            const console = document.getElementById('console');
+            const consoleOutput = document.getElementById('consoleOutput');
+            const code = document.getElementById('codeEditor').value;
+
+            console.classList.add('show');
+            consoleOutput.innerHTML = '';
+
+            try {
+                const safeLog = (...args) => {
+                    consoleOutput.innerHTML += args.join(' ') + '\n';
+                };
+
+                const runEnv = new Function('console', `
+                    try {
+                        ${code}
+                    } catch(e) {
+                        console.error(e);
+                    }
+                `);
+
+                runEnv({
+                    log: safeLog,
+                    error: (error) => {
+                        consoleOutput.innerHTML += `<span class="console-error">${error}</span>\n`;
+                    }
+                });
+
+            } catch (error) {
+                consoleOutput.innerHTML += `<span class="console-error">Error: ${error.message}</span>\n`;
+            }
+        }
+
+        // Debug 代码
+        function debugCode() {
+            const console = document.getElementById('console');
+            const consoleOutput = document.getElementById('consoleOutput');
+            const code = document.getElementById('codeEditor').value;
+
+            console.classList.add('show');
+            consoleOutput.innerHTML = '<span class="console-debug">Debug mode started...</span>\n';
+
+            try {
+                const debugCode = `debugger;\n${code}`;
+                const safeLog = (...args) => {
+                    consoleOutput.innerHTML += args.join(' ') + '\n';
+                };
+
+                const runEnv = new Function('console', debugCode);
+
+                runEnv({
+                    log: safeLog,
+                    error: (error) => {
+                        consoleOutput.innerHTML += `<span class="console-error">${error}</span>\n`;
+                    },
+                    debug: (msg) => {
+                        consoleOutput.innerHTML += `<span class="console-debug">${msg}</span>\n`;
+                    }
+                });
+
+            } catch (error) {
+                consoleOutput.innerHTML += `<span class="console-error">Debug Error: ${error.message}</span>\n`;
+            }
+        }
+
+        // 切换下拉菜单
+        function toggleDropdown(id) {
+            const dropdowns = document.getElementsByClassName('dropdown-content');
+            for (const dropdown of dropdowns) {
+                if (dropdown.id !== id && dropdown.classList.contains('show')) {
+                    dropdown.classList.remove('show');
+                }
+            }
+            document.getElementById(id).classList.toggle('show');
+        }
+
+        // 点击外部关闭设置面板和下拉菜单
+        window.onclick = function(event) {
+            if (!event.target.matches('.settings-button') && !event.target.closest('.settings-panel')) {
+                document.getElementById('settingsPanel').classList.remove('show');
+            }
+            if (!event.target.matches('.toolbar-item')) {
+                const dropdowns = document.getElementsByClassName('dropdown-content');
+                for (const dropdown of dropdowns) {
+                    if (dropdown.classList.contains('show')) {
+                        dropdown.classList.remove('show');
+                    }
+                }
+            }
+        }
+
+        // 初始化
+        updateFileExplorer();
+        updateLineNumbers();
+    </script>
+</body>
+</html>
+

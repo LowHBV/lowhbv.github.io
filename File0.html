@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>此电脑</title>
+    <style>
+        :root {
+            --bg-color: rgba(32, 32, 32, 0.95);
+            --surface-color: rgba(45, 45, 45, 0.8);
+            --border-color: rgba(255, 255, 255, 0.1);
+            --text-color: #ffffff;
+            --text-secondary: rgba(255, 255, 255, 0.7);
+            --accent-color: #60cdff;
+            --hover-color: rgba(255, 255, 255, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', sans-serif;
+            user-select: none;
+        }
+
+        body {
+            background: linear-gradient(135deg, #1a2a3d 0%, #2c3e50 100%);
+            color: var(--text-color);
+            min-height: 100vh;
+            backdrop-filter: blur(20px);
+        }
+
+        .window {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            background: var(--bg-color);
+            backdrop-filter: blur(20px);
+        }
+
+        .title-bar {
+            display: flex;
+            align-items: center;
+            padding: 8px;
+            background: var(--surface-color);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .navigation {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .nav-button {
+            padding: 4px 8px;
+            background: transparent;
+            border: none;
+            color: var(--text-color);
+            cursor: pointer;
+            border-radius: 4px;
+        }
+
+        .nav-button:hover {
+            background: var(--hover-color);
+        }
+
+        .search-bar {
+            flex: 1;
+            margin: 0 16px;
+            position: relative;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 8px 12px;
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            color: var(--text-color);
+        }
+
+        .toolbar {
+            display: flex;
+            align-items: center;
+            padding: 8px;
+            gap: 16px;
+            background: var(--surface-color);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .tool-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .sidebar {
+            width: 240px;
+            background: var(--surface-color);
+            padding: 16px;
+            border-right: 1px solid var(--border-color);
+            overflow-y: auto;
+        }
+
+        .sidebar-item {
+            display: flex;
+            align-items: center;
+            padding: 8px;
+            color: var(--text-color);
+            text-decoration: none;
+            border-radius: 4px;
+            margin-bottom: 4px;
+        }
+
+        .sidebar-item:hover {
+            background: var(--hover-color);
+        }
+
+        .sidebar-item.active {
+            background: var(--hover-color);
+        }
+
+        .content {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .disk-section {
+            margin-bottom: 24px;
+        }
+
+        .section-title {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+        }
+
+        .disk-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 16px;
+        }
+
+        .disk-card {
+            background: var(--surface-color);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 16px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .disk-icon {
+            width: 40px;
+            height: 40px;
+            background: var(--accent-color);
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .disk-info {
+            flex: 1;
+        }
+
+        .disk-name {
+            font-size: 14px;
+            margin-bottom: 4px;
+        }
+
+        .disk-usage {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .progress-bar {
+            height: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+            margin-top: 8px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--accent-color);
+            width: 60%;
+        }
+
+        .main-container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .color-tag {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .tag-red { background: #ff4757; }
+        .tag-blue { background: #2e86de; }
+        .tag-yellow { background: #ffa502; }
+        .tag-green { background: #2ed573; }
+        .tag-orange { background: #ff7f50; }
+        .tag-purple { background: #9b59b6; }
+        .tag-pink { background: #ff6b81; }
+    </style>
+</head>
+<body>
+    <div class="window">
+        <div class="title-bar">
+            <div class="navigation">
+                <button class="nav-button">←</button>
+                <button class="nav-button">→</button>
+                <button class="nav-button">↑</button>
+                <span>💻 此电脑 ></span>
+            </div>
+            <div class="search-bar">
+                <input type="text" class="search-input" placeholder="在这里输入你要搜索的内容">
+            </div>
+        </div>
+
+        <div class="toolbar">
+            <div class="tool-group">
+                <button class="nav-button">✚ 新建</button>
+                <button class="nav-button">✂️ 剪切</button>
+                <button class="nav-button">📋 复制</button>
+                <button class="nav-button">📎 粘贴</button>
+            </div>
+            <div class="tool-group">
+                <button class="nav-button">↕️ 排序方式</button>
+                <button class="nav-button">⚙️ 布局</button>
+            </div>
+        </div>
+
+        <div class="main-container">
+            <div class="sidebar">
+                <a href="#" class="sidebar-item active">
+                    📌 已固定
+                </a>
+                <a href="#" class="sidebar-item">
+                    ⭐ 快速访问
+                </a>
+                <a href="#" class="sidebar-item">
+                    ☁️ OneDrive
+                </a>
+                <a href="#" class="sidebar-item">
+                    💻 此电脑
+                </a>
+                <a href="#" class="sidebar-item">
+                    🗑️ 回收站
+                </a>
+                <div style="margin: 16px 0; border-bottom: 1px solid var(--border-color);"></div>
+                <div style="margin-bottom: 8px; color: var(--text-secondary);">标签</div>
+                <a href="#" class="sidebar-item">
+                    <span class="color-tag tag-red"></span>红色
+                </a>
+                <a href="#" class="sidebar-item">
+                    <span class="color-tag tag-blue"></span>蓝色
+                </a>
+                <a href="#" class="sidebar-item">
+                    <span class="color-tag tag-yellow"></span>黄色
+                </a>
+                <a href="#" class="sidebar-item">
+                    <span class="color-tag tag-green"></span>绿色
+                </a>
+                <a href="#" class="sidebar-item">
+                    <span class="color-tag tag-orange"></span>橙色
+                </a>
+                <a href="#" class="sidebar-item">
+                    <span class="color-tag tag-purple"></span>紫色
+                </a>
+                <a href="#" class="sidebar-item">
+                    <span class="color-tag tag-pink"></span>粉色
+                </a>
+            </div>
+
+            <div class="content">
+                <div class="disk-section">
+                    <h2 class="section-title">设备和磁盘驱动器</h2>
+                    <div class="disk-grid">
+                        <div class="disk-card">
+                            <div class="disk-icon">💾</div>
+                            <div class="disk-info">
+                                <div class="disk-name">本地磁盘 (C:)</div>
+                                <div class="disk-usage">32.6 GB 可用, 共 143 GB</div>
+                                <div class="progress-bar">
+                                    <div class="progress-fill" style="width: 77%;"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="disk-card">
+                            <div class="disk-icon">💾</div>
+                            <div class="disk-info">
+                                <div class="disk-name">本地磁盘 (D:)</div>
+                                <div class="disk-usage">185.3 GB 可用, 共 216 GB</div>
+                                <div class="progress-bar">
+                                    <div class="progress-fill" style="width: 14%;"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 添加磁盘卡片点击效果
+        document.querySelectorAll('.disk-card').forEach(card => {
+            card.addEventListener('click', () => {
+                card.style.background = 'var(--hover-color)';
+                setTimeout(() => {
+                    card.style.background = 'var(--surface-color)';
+                }, 200);
+            });
+        });
+
+        // 添加导航按钮点击效果
+        document.querySelectorAll('.nav-button').forEach(button => {
+            button.addEventListener('click', () => {
+                button.style.background = 'var(--hover-color)';
+                setTimeout(() => {
+                    button.style.background = 'transparent';
+                }, 200);
+            });
+        });
+    </script>
+</body>
+</html>

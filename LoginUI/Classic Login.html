@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登录/注册</title>
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            background: linear-gradient(135deg, #e0f7fa, #b2ebf2);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            background-color: rgba(255, 255, 255, 0.9);
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+            width: 400px;
+            max-width: 90%;
+            text-align: center;
+        }
+
+        .form-header {
+            margin-bottom: 30px;
+        }
+
+        .form-header h2 {
+            margin-top: 0;
+            font-weight: 500;
+            font-size: 28px;
+            color: #26a69a;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+            text-align: left;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 400;
+            color: #555;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            box-sizing: border-box;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus {
+            border-color: #26a69a;
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(38, 166, 154, 0.2);
+        }
+
+        .form-group button {
+            background-color: #26a69a;
+            color: white;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            width: 100%;
+            font-size: 18px;
+            font-weight: 500;
+            transition: background-color 0.3s ease;
+        }
+
+        .form-group button:hover {
+            background-color: #00897b;
+        }
+
+        .form-group button:active {
+            background-color: #00796b;
+            transform: translateY(1px);
+            box-shadow: 0 1px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        .form-switch {
+            margin-top: 20px;
+            font-size: 15px;
+        }
+
+        .form-switch a {
+            color: #26a69a;
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .form-switch a:hover {
+            text-decoration: underline;
+            color: #00897b;
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="login-form" id="loginForm">
+        <div class="form-header">
+            <h2>登录</h2>
+        </div>
+        <div class="form-group">
+            <label for="loginUsername">用户名/邮箱</label>
+            <input type="text" id="loginUsername" name="loginUsername" placeholder="请输入用户名或邮箱">
+        </div>
+        <div class="form-group">
+            <label for="loginPassword">密码</label>
+            <input type="password" id="loginPassword" name="loginPassword" placeholder="请输入密码">
+        </div>
+        <div class="form-group">
+            <button type="submit">登录</button>
+        </div>
+        <div class="form-switch">
+            <a href="#" id="switchToRegister">没有账号？点击注册</a>
+        </div>
+    </div>
+
+    <div class="register-form hidden" id="registerForm">
+        <div class="form-header">
+            <h2>注册</h2>
+        </div>
+        <div class="form-group">
+            <label for="registerUsername">用户名</label>
+            <input type="text" id="registerUsername" name="registerUsername" placeholder="请输入用户名">
+        </div>
+        <div class="form-group">
+            <label for="registerEmail">邮箱</label>
+            <input type="email" id="registerEmail" name="registerEmail" placeholder="请输入邮箱">
+        </div>
+        <div class="form-group">
+            <label for="registerPassword">密码</label>
+            <input type="password" id="registerPassword" name="registerPassword" placeholder="请输入密码">
+        </div>
+        <div class="form-group">
+            <label for="confirmPassword">确认密码</label>
+            <input type="password" id="confirmPassword" name="confirmPassword" placeholder="请确认密码">
+        </div>
+        <div class="form-group">
+            <button type="submit">注册</button>
+        </div>
+        <div class="form-switch">
+            <a href="#" id="switchToLogin">已有账号？点击登录</a>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.getElementById('switchToRegister').addEventListener('click', function(event) {
+        event.preventDefault();
+        document.getElementById('loginForm').classList.add('hidden');
+        document.getElementById('registerForm').classList.remove('hidden');
+    });
+
+    document.getElementById('switchToLogin').addEventListener('click', function(event) {
+        event.preventDefault();
+        document.getElementById('registerForm').classList.add('hidden');
+        document.getElementById('loginForm').classList.remove('hidden');
+    });
+</script>
+
+</body>
+</html>

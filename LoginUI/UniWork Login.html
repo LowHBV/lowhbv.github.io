@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sound Login</title>
+    <style>
+        :root {
+            --background: #1e1e1e;
+            --surface: #2d2d2d;
+            --primary: #4CAF50;
+            --primary-hover: #45a049;
+            --text: #ffffff;
+            --text-secondary: #b0b0b0;
+            --error: #ff5252;
+            --border: #404040;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        body {
+            background: var(--background);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background-image: 
+                linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)),
+                url('https://images.unsplash.com/photo-1616763355548-1b606f439f86?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3wxMjA3fDB8MXxhbGx8fHx8fHx8fHwxNjI5NjY5NjY5&ixlib=rb-4.0.3&q=80&w=1080');
+            background-size: cover;
+            background-position: center;
+        }
+
+        .login-container {
+            background: var(--surface);
+            width: 90%;
+            max-width: 400px;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .login-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .login-header h1 {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 0.75rem;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            color: var(--text);
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(76,175,80,0.2);
+        }
+
+        .login-button {
+            width: 100%;
+            padding: 0.75rem;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        .login-button:hover {
+            background: var(--primary-hover);
+        }
+
+        .microsoft-login {
+            width: 100%;
+            padding: 0.75rem;
+            background: #0078d4;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 1rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-top: 1rem;
+            transition: background 0.3s ease;
+        }
+
+        .microsoft-login:hover {
+            background: #006abc;
+        }
+
+        .token-login {
+            width: 100%;
+            padding: 0.75rem;
+            background: #424242;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 1rem;
+            cursor: pointer;
+            margin-top: 1rem;
+            transition: background 0.3s ease;
+        }
+
+        .token-login:hover {
+            background: #353535;
+        }
+
+        .links {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 1rem;
+            font-size: 0.9rem;
+        }
+
+        .links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .links a:hover {
+            color: var(--primary);
+        }
+
+        .error-message {
+            color: var(--error);
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+            text-align: center;
+            display: none;
+        }
+
+        .form-switch {
+            display: none;
+        }
+
+        .form-switch.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <!-- 登录表单 -->
+        <form id="loginForm" class="form-switch active">
+            <div class="login-header">
+                <h1>账户登录</h1>
+                <p>欢迎回来</p>
+            </div>
+
+            <div class="form-group">
+                <input type="text" class="form-input" placeholder="用户名" required>
+            </div>
+
+            <div class="form-group">
+                <input type="password" class="form-input" placeholder="密码" required>
+            </div>
+
+            <button type="submit" class="login-button">登录</button>
+            
+            <button type="button" class="microsoft-login">
+                <svg width="20" height="20" viewBox="0 0 21 21">
+                    <path fill="currentColor" d="M10 0h10v10H10zM0 0h9v9H0zM10 11h10v10H10zM0 11h9v9H0z"/>
+                </svg>
+                Microsoft 登录
+            </button>
+
+            <button type="button" class="token-login">Token 登录</button>
+
+            <div class="links">
+                <a href="#" onclick="switchForm('register')">注册账号</a>
+                <a href="#" onclick="switchForm('forgot')">找回密码</a>
+            </div>
+
+            <div class="error-message"></div>
+        </form>
+
+        <!-- 注册表单 -->
+        <form id="registerForm" class="form-switch">
+            <div class="login-header">
+                <h1>注册账号</h1>
+                <p>创建您的账户</p>
+            </div>
+
+            <div class="form-group">
+                <input type="email" class="form-input" placeholder="电子邮箱" required>
+            </div>
+
+            <div class="form-group">
+                <input type="text" class="form-input" placeholder="用户名" required>
+            </div>
+
+            <div class="form-group">
+                <input type="password" class="form-input" placeholder="密码" required>
+            </div>
+
+            <div class="form-group">
+                <input type="password" class="form-input" placeholder="确认密码" required>
+            </div>
+
+            <button type="submit" class="login-button">注册</button>
+
+            <div class="links">
+                <a href="#" onclick="switchForm('login')">返回登录</a>
+            </div>
+
+            <div class="error-message"></div>
+        </form>
+
+        <!-- 找回密码表单 -->
+        <form id="forgotForm" class="form-switch">
+            <div class="login-header">
+                <h1>找回密码</h1>
+                <p>重置您的密码</p>
+            </div>
+
+            <div class="form-group">
+                <input type="email" class="form-input" placeholder="电子邮箱" required>
+            </div>
+
+            <button type="submit" class="login-button">发送重置链接</button>
+
+            <div class="links">
+                <a href="#" onclick="switchForm('login')">返回登录</a>
+            </div>
+
+            <div class="error-message"></div>
+        </form>
+
+        <!-- Token登录表单 -->
+        <form id="tokenForm" class="form-switch">
+            <div class="login-header">
+                <h1>Token 登录</h1>
+                <p>使用访问令牌登录</p>
+            </div>
+
+            <div class="form-group">
+                <input type="text" class="form-input" placeholder="请输入Token" required>
+            </div>
+
+            <button type="submit" class="login-button">验证并登录</button>
+
+            <div class="links">
+                <a href="#" onclick="switchForm('login')">返回登录</a>
+            </div>
+
+            <div class="error-message"></div>
+        </form>
+    </div>
+
+    <script>
+        function switchForm(formType) {
+            // 隐藏所有表单
+            document.querySelectorAll('.form-switch').forEach(form => {
+                form.classList.remove('active');
+            });
+
+            // 显示选中的表单
+            let targetForm;
+            switch(formType) {
+                case 'register':
+                    targetForm = document.getElementById('registerForm');
+                    break;
+                case 'forgot':
+                    targetForm = document.getElementById('forgotForm');
+                    break;
+                case 'token':
+                    targetForm = document.getElementById('tokenForm');
+                    break;
+                default:
+                    targetForm = document.getElementById('loginForm');
+            }
+            targetForm.classList.add('active');
+        }
+
+        // 为所有表单添加提交事件处理
+        document.querySelectorAll('form').forEach(form => {
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const errorMessage = form.querySelector('.error-message');
+                
+                // 模拟API调用
+                setTimeout(() => {
+                    errorMessage.style.display = 'block';
+                    errorMessage.textContent = '功能开发中...';
+                }, 1000);
+            });
+        });
+
+        // Token登录按钮事件
+        document.querySelector('.token-login').addEventListener('click', function() {
+            switchForm('token');
+        });
+    </script>
+</body>
+</html>

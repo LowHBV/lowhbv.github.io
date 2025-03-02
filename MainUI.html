@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+    <meta charset="UTF-8">
+    <title>宽距系统看板</title>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+    <style>
+        /* 自适应宽度提示框 */
+        .tooltip {
+            display: none;
+            position: absolute;
+            bottom: calc(100% + 10px);
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(30, 30, 30, 0.9);
+            backdrop-filter: blur(12px) saturate(180%);
+            color: rgba(255,255,255,0.9);
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            min-width: 120px;
+            max-width: 300px;
+            border: 1px solid rgba(255,255,255,0.15);
+            box-shadow: 0 12px 32px rgba(0,0,0,0.2);
+            line-height: 1.4;
+            z-index: 1000;
+            pointer-events: none;
+            animation: fadeInTop 0.25s cubic-bezier(0.23, 1, 0.32, 1);
+            white-space: normal;  /* 新增换行支持 */
+            text-align: center;
+        }
+
+        @keyframes fadeInTop {
+            from {
+                opacity: 0;
+                transform: translateX(-50%) translateY(8px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(-50%) translateY(0);
+            }
+        }
+
+        /* 列表项交互优化 */
+        .list-item {
+            position: relative;
+            background: rgba(0,0,0,0.3);
+            margin-bottom: 0.8rem;
+            border-radius: 6px;
+            transition: all 0.25s ease-out;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .list-item:hover {
+            transform: translateX(6px);
+            z-index: 1001;
+        }
+
+        .list-item:hover .tooltip {
+            display: block;
+        }
+
+        /* 明暗主题适配 */
+        [data-theme="light"] .tooltip {
+            background: rgba(255,255,255,0.95);
+            color: var(--text-light);
+            border: 1px solid rgba(0,0,0,0.08);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+        }
+
+        /* 保持原有核心样式 */
+        :root {
+            --bg-light: #f8f9fa;
+            --text-light: #2d3436;
+            --border-light: rgba(0,0,0,0.1);
+            --accent-blue: #1971c2;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        }
+
+        body {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #1a1f25 0%, #2c3e50 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 15px;
+        }
+
+        .container {
+            display: flex;
+            gap: 3rem;
+            width: 100%;
+            max-width: 860px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .list-container {
+            flex: 0 1 320px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+            transition: all 0.3s cubic-bezier(0.16, 0.71, 0.29, 0.99);
+            backdrop-filter: blur(200px);
+            min-width: 240px;
+        }
+
+        .list-container:hover {
+            transform: translateY(-4px) scale(1.02);
+            box-shadow: 0 12px 32px rgba(0,0,0,0.3);
+        }
+
+        h2 {
+            color: rgba(255,255,255,0.9);
+            margin-bottom: 1rem;
+            font-size: 1.3rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid rgba(255,255,255,0.1);
+        }
+
+        .list {
+            list-style: none;
+            min-height: 300px;
+            padding: 0.5rem;
+        }
+
+        .list-item a {
+            display: block;
+            padding: 0.9rem;
+            color: white;
+            font-size: 0.95rem;
+            text-decoration: none;
+            position: relative;
+        }
+
+        [data-theme="light"] {
+            background: linear-gradient(135deg, #f0f4f8 0%, #dfe6ed 100%);
+
+            .list-container {
+                background: rgba(255,255,255,0.95);
+                border-color: var(--border-light);
+            }
+
+            h2 {
+                color: var(--text-light);
+                border-bottom-color: var(--border-light);
+            }
+
+            .list-item {
+                background: rgba(0,0,0,0.03);
+                border-color: var(--border-light);
+            }
+
+            .list-item a {
+                color: var(--text-light);
+            }
+        }
+
+        @media (max-width: 640px) {
+            .container {
+                flex-direction: column;
+                max-width: 400px;
+                gap: 1.5rem;
+            }
+            .list-container {
+                padding: 1.2rem;
+            }
+            .tooltip {
+                display: none !important;
+            }
+        }
+    </style>
+</head>
+<body>
+<button onclick="toggleTheme()" style="
+        position: fixed;
+        top: 15px;
+        right: 15px;
+        padding: 6px 10px;
+        font-size: 0.9rem;
+        border-radius: 6px;
+        background: rgba(255,255,255,0.1);
+        border: none;
+        color: white;
+        cursor: pointer;
+        backdrop-filter: blur(10px);
+    ">
+    🌓 主题
+</button>
+
+<div class="container">
+    <div class="list-container">
+        <h2>📁 项目</h2>
+        <ul id="project-list" class="list">
+            <li class="list-item"><a href="TXT IDE.html">🚀 IDE编译器
+                <div class="tooltip">集成开发编辑，提供代码编辑、调试和项目管理功能</div>
+            </a></li>
+            <li class="list-item"><a href="WB.html">✍️ 文本编辑
+                <div class="tooltip">多功能文本编辑器，支持多种编程语言和实时预览</div>
+            </a></li>
+            <li class="list-item"><a href="File.html">📁 文件编辑
+                <div class="tooltip">高级文件操作界面，支持批量处理和格式转换</div>
+            </a></li>
+            <li class="list-item"><a href="File0.html">📁 文件管理
+                <div class="tooltip">可视化文件管理系统，支持云存储和版本控制</div>
+            </a></li>
+            <li class="list-item"><a href="win12-main/desktop-copy.html"><img src="win12-main/icon/logo.svg" style="width: 7%; height: 7%;"> Windows12HTML
+                <div class="tooltip">基于Web的Windows 12概念界面实现</div>
+            </a></li>
+            <li class="list-item"><a href="HTML IDE Beta.html">🔧 HTML编辑器Beta
+                <div class="tooltip">一款基于浏览器的集成开发工具，专为前端开发者设计</div>
+            </a></li>
+            <li class="list-item"><a href="HTML IDE.html">🔧 HTML编辑器
+                <div class="tooltip">一款基于浏览器的集成开发工具，专为前端开发者设计</div>
+            </a></li>
+        </ul>
+    </div>
+
+    <div class="list-container">
+        <h2>🔐 LoginUI</h2>
+        <ul id="login-list" class="list">
+            <li class="list-item"><a href="LoginUI/Classic Login.html">🔑 ClassicLoginUI
+                <div class="tooltip">经典登录界面设计，适合传统管理系统</div>
+            </a></li>
+            <li class="list-item"><a href="LoginUI/Concise Login.html">🔑 ConciseLoginUI
+                <div class="tooltip">极简风格登录界面，专注核心功能</div>
+            </a></li>
+            <li class="list-item"><a href="LoginUI/UniPro Login.html">🔑  UniProLoginUI
+                <div class="tooltip">专业版统一身份认证系统界面</div>
+            </a></li>
+            <li class="list-item"><a href="LoginUI/UniWork Login.html">🔑 UniWorkLoginUI
+                <div class="tooltip">企业级工作平台登录门户</div>
+            </a></li>
+            <li class="list-item"><a href="LoginUI/Modern Login.html">🔑  ModernLoginUI
+                <div class="tooltip">现代化设计语言，支持暗黑/明亮主题</div>
+            </a></li>
+            <li class="list-item"><a href="LoginUI/Garish Login.html">🔑  GarishLoginUI
+                <div class="tooltip">高对比度视觉设计，适合特殊需求</div>
+            </a></li>
+            <li class="list-item"><a href="LoginUI/Common Login.html">🔑  CommonLoginUI
+                <div class="tooltip">通用型登录模板，适合快速集成</div>
+            </a></li>
+            <li class="list-item"><a href="LoginUI/Page Login.html">🔑  PageLoginUI
+                <div class="tooltip">全屏页面式登录体验</div>
+            </a></li>
+            <li class="list-item"><a href="LoginUI/Ugly Login.html">🔑  UglyLoginUI
+                <div class="tooltip">复古风格登录界面（开发者彩蛋）</div>
+            </a></li>
+            <li class="list-item"><a href="LoginUI/Ordinary Login.html">🔑  OrdinaryLoginUI
+                <div class="tooltip">标准登录模板，平衡功能与美观</div>
+            </a></li>
+            <li class="list-item"><a href="LoginUI/NewEditionLogin.html">🔑  NewEditionLoginUI
+                <div class="tooltip">最新版实验性登录界面，包含创新功能</div>
+            </a></li>
+        </ul>
+    </div>
+</div>
+<script>
+    // 拖拽配置
+    const commonConfig = {
+        animation: 180,
+        ghostClass: 'ghost',
+        dragClass: 'dragging',
+        group: 'shared',
+        swapThreshold: 0.6
+    };
+
+    document.querySelectorAll('.list').forEach(list => {
+        new Sortable(list, {
+            ...commonConfig,
+            handle: '.list-item',
+            onStart: (e) => e.item.classList.add('dragging'),
+            onEnd: (e) => e.item.classList.remove('dragging')
+        });
+    });
+
+    // 主题切换
+    function toggleTheme() {
+        document.documentElement.toggleAttribute('data-theme');
+    }
+</script>
+</body>
+</html>

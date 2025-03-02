@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登入 | 现代系统</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        body {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f0f2f5;
+            background-image: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        }
+
+        .login-container {
+            background: white;
+            padding: 2.5rem;
+            border-radius: 20px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+            width: 100%;
+            max-width: 400px;
+            transition: transform 0.3s ease;
+        }
+
+        .login-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .logo {
+            width: 60px;
+            margin-bottom: 1.5rem;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+        }
+
+        h1 {
+            color: #2c3e50;
+            font-size: 1.8rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 0 3px rgba(52,152,219,0.1);
+        }
+
+        .login-btn {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, opacity 0.2s;
+        }
+
+        .login-btn:hover {
+            transform: translateY(-1px);
+            opacity: 0.95;
+        }
+
+        .footer-text {
+            text-align: center;
+            margin-top: 1.5rem;
+            color: #7f8c8d;
+        }
+
+        .footer-text a {
+            color: #3498db;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        @media (max-width: 480px) {
+            .login-container {
+                margin: 1rem;
+                padding: 1.5rem;
+            }
+        }
+
+        /* 新增动态样式 */
+        .login-title, .register-title, .forgot-title {
+            display: none;
+        }
+        .login-title { display: block; } /* 默认显示登录标题 */
+
+        .login-form { display: block; }
+        .register-form, .forgot-form { display: none; }
+
+        .login-links { display: block; }
+        .register-links, .forgot-links { display: none; }
+
+        .header-subtext {
+            color: #7f8c8d;
+            font-size: 0.95rem;
+            transition: opacity 0.3s ease;
+        }
+
+        /* 增强表单交互 */
+        input::placeholder {
+            color: #95a5a6;
+            transition: opacity 0.3s ease;
+        }
+
+        input:focus::placeholder {
+            opacity: 0.5;
+        }
+
+        /* 密码强度提示 */
+        .password-strength {
+            font-size: 0.85rem;
+            color: #7f8c8d;
+            margin-top: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <!-- 登录容器通用结构 -->
+    <div class="login-container">
+        <div class="login-header">
+            <svg class="logo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+            </svg>
+            
+            <!-- 动态标题 -->
+            <h1>
+                <span class="login-title">欢迎回来</span>
+                <span class="register-title">创建新账户</span>
+                <span class="forgot-title">重置密码</span>
+            </h1>
+            <p class="header-subtext">请验证您的身份</p>
+        </div>
+
+        <!-- 登录表单 -->
+        <form class="login-form">
+            <div class="form-group">
+                <input type="email" placeholder="电子邮箱" required>
+            </div>
+            <div class="form-group">
+                <input type="password" placeholder="密码" required>
+            </div>
+            <button type="submit" class="login-btn">立即登入</button>
+        </form>
+
+        <!-- 注册表单 -->
+        <form class="register-form">
+            <div class="form-group">
+                <input type="text" placeholder="用户名" required>
+            </div>
+            <div class="form-group">
+                <input type="email" placeholder="电子邮箱" required>
+            </div>
+            <div class="form-group">
+                <input type="password" placeholder="密码（至少8位）" minlength="8" required>
+            </div>
+            <div class="form-group">
+                <input type="password" placeholder="确认密码" minlength="8" required>
+            </div>
+            <button type="submit" class="login-btn">创建账户</button>
+        </form>
+
+        <!-- 忘记密码表单 -->
+        <form class="forgot-form">
+            <div class="form-group">
+                <input type="email" placeholder="注册邮箱" required>
+            </div>
+            <button type="submit" class="login-btn">发送重置链接</button>
+        </form>
+
+        <!-- 动态底部链接 -->
+        <p class="footer-text">
+            <span class="login-links">
+                没有账户？<a href="#register" class="switch-form">立即注册</a><br>
+                <a href="#forgot" class="switch-form">忘记密码？</a>
+            </span>
+            <span class="register-links">
+                已有账户？<a href="#login" class="switch-form">立即登录</a><br>
+                <a href="#forgot" class="switch-form">忘记密码？</a>
+            </span>
+            <span class="forgot-links">
+                <a href="#login" class="switch-form">返回登录</a><br>
+                需要注册？<a href="#register" class="switch-form">创建账户</a>
+            </span>
+        </p>
+    </div>
+
+    <script>
+        // 表单切换逻辑
+        document.querySelectorAll('.switch-form').forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const target = e.target.getAttribute('href').substring(1);
+                document.querySelectorAll('form').forEach(f => f.style.display = 'none');
+                document.querySelector(`.${target}-form`).style.display = 'block';
+                
+                document.querySelectorAll('.login-title, .register-title, .forgot-title').forEach(t => t.style.display = 'none');
+                document.querySelector(`.${target}-title`).style.display = 'block';
+                
+                document.querySelectorAll('.login-links, .register-links, .forgot-links').forEach(l => l.style.display = 'none');
+                document.querySelector(`.${target}-links`).style.display = 'block';
+                
+                document.querySelector('.header-subtext').textContent = 
+                    target === 'login' ? '请登入您的账户' :
+                    target === 'register' ? '开始您的旅程' : '我们将发送重置链接';
+            });
+        });
+    </script>
+</body>
+</html>
