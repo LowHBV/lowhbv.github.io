@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>底部固定聊天界面</title>
+    <style>
+        :root {
+            --primary-color: #07c160;
+            --self-bg: #95ec69;
+            --other-bg: #ffffff;
+            --header-bg: #ffffff;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        }
+
+        body {
+            background: #f0f0f0;
+            height: 100vh;
+        }
+
+        /* 容器布局 */
+        .chat-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* 头部样式 */
+        .header {
+            padding: 12px 20px;
+            background: var(--header-bg);
+            display: flex;
+            align-items: center;
+            border-bottom: 1px solid #e0e0e0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+        }
+
+        .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            object-fit: cover;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .avatar:hover {
+            transform: scale(1.05);
+        }
+
+        .user-info {
+            margin-left: 12px;
+        }
+
+        .username {
+            font-weight: 600;
+            color: #333;
+            font-size: 16px;
+        }
+
+        .status {
+            color: #666;
+            font-size: 12px;
+            margin-top: 2px;
+        }
+
+        /* 聊天内容区域 */
+        .chat-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px 20px 0;
+            background: #f8f8f8;
+            scroll-behavior: smooth;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+        }
+
+        /* 消息气泡 */
+        .message {
+            display: flex;
+            margin-bottom: 15px;
+            animation: fadeIn 0.25s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .message.self {
+            flex-direction: row-reverse;
+        }
+
+        .message-bubble {
+            max-width: 70%;
+            padding: 12px 16px;
+            border-radius: 12px;
+            line-height: 1.4;
+            font-size: 14px;
+            word-break: break-word;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .message.other .message-bubble {
+            background: var(--other-bg);
+            margin-left: 10px;
+        }
+
+        .message.self .message-bubble {
+            background: var(--self-bg);
+            margin-right: 10px;
+        }
+
+        /* 输入区域 */
+        .input-area {
+            background: white;
+            padding: 12px 16px;
+            border-top: 1px solid #e0e0e0;
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            position: sticky;
+            bottom: 0;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.03);
+        }
+
+        .message-input {
+            flex: 1;
+            padding: 8px 12px;
+            border: 1px solid #e0e0e0;
+            border-radius: 18px;
+            min-height: 36px;
+            max-height: 100px;
+            font-size: 14px;
+            line-height: 1.4;
+            outline: none;
+            resize: none;
+            transition: border-color 0.2s;
+        }
+
+        .message-input:focus {
+            border-color: var(--primary-color);
+        }
+
+        .send-button {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 8px 18px;
+            border-radius: 18px;
+            min-height: 36px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: background 0.2s;
+        }
+
+        .send-button:hover {
+            background: #06ad54;
+        }
+
+        /* 控制按钮 */
+        .control-bar {
+            margin-left: auto;
+            display: flex;
+            gap: 8px;
+        }
+
+        .identity-btn {
+            background: rgba(7, 193, 96, 0.1);
+            color: var(--primary-color);
+            border: none;
+            padding: 6px 12px;
+            border-radius: 16px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        @media (max-width: 768px) {
+            .chat-container {
+                border-radius: 0;
+            }
+            
+            .message-bubble {
+                max-width: 80%;
+                font-size: 14px;
+            }
+
+            .input-area {
+                padding: 8px 12px;
+            }
+
+            .message-input {
+                padding: 6px 10px;
+                min-height: 32px;
+            }
+
+            .send-button {
+                padding: 6px 14px;
+                min-height: 32px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="main-chat">
+            <div class="header">
+                <img src="" class="avatar" id="currentAvatar" onclick="visitProfile()">
+                <div class="user-info">
+                    <div class="username" id="currentUsername">用户名</div>
+                    <div class="status" id="currentStatus">在线</div>
+                </div>
+                <div class="control-bar">
+                    <button class="identity-btn" id="switchIdentity">切换身份</button>
+                </div>
+            </div>
+            <div class="chat-content" id="chatContent"></div>
+            <div class="input-area">
+                <textarea class="message-input" id="messageInput" placeholder="输入消息..."></textarea>
+                <button class="send-button" onclick="sendMessage()">发送</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const users = {
+            self: {
+                name: '我的账号',
+                avatar: 'https://source.unsplash.com/40x40/?person',
+                status: '在线',
+                profile: '/profile/self'
+            },
+            other: {
+                name: '好友账号',
+                avatar: 'https://source.unsplash.com/40x40/?avatar',
+                status: '在线',
+                profile: '/profile/friend'
+            }
+        }
+
+        let currentIdentity = 'self'
+
+        // 更新界面显示
+        function updateUI() {
+            const user = users[currentIdentity]
+            document.getElementById('currentAvatar').src = user.avatar
+            document.getElementById('currentUsername').textContent = user.name
+            document.getElementById('currentStatus').textContent = user.status
+            // 添加初始化滚动
+            const chatContent = document.getElementById('chatContent')
+            chatContent.scrollTop = chatContent.scrollHeight
+        }
+
+        // 创建消息元素
+        function createMessageElement(text) {
+            const isSelf = currentIdentity === 'self'
+            const messageDiv = document.createElement('div')
+            messageDiv.className = `message ${isSelf ? 'self' : 'other'}`
+
+            const avatar = document.createElement('img')
+            avatar.className = 'avatar'
+            avatar.src = users[currentIdentity].avatar
+            avatar.onclick = visitProfile
+
+            const bubble = document.createElement('div')
+            bubble.className = 'message-bubble'
+            bubble.textContent = text
+
+            messageDiv.appendChild(avatar)
+            messageDiv.appendChild(bubble)
+
+            return messageDiv
+        }
+
+        // 发送消息
+        function sendMessage() {
+            const input = document.getElementById('messageInput')
+            const text = input.value.trim()
+            
+            if (!text) return
+
+            const chatContent = document.getElementById('chatContent')
+            chatContent.appendChild(createMessageElement(text))
+            
+            // 增强滚动到底部逻辑
+            requestAnimationFrame(() => {
+                chatContent.scrollTop = chatContent.scrollHeight
+            })
+            
+            input.value = ''
+        }
+
+        // 切换身份
+        function switchIdentity() {
+            currentIdentity = currentIdentity === 'self' ? 'other' : 'self'
+            updateUI()
+            document.getElementById('switchIdentity').textContent = 
+                `当前身份: ${currentIdentity === 'self' ? '自己' : '对方'}`
+        }
+
+        // 访问个人主页
+        function visitProfile() {
+            const profileUrl = users[currentIdentity].profile
+            alert(`即将跳转到个人主页: ${profileUrl}`)
+            // window.location.href = profileUrl
+        }
+
+        // 初始化
+        updateUI()
+        document.getElementById('switchIdentity').addEventListener('click', switchIdentity)
+
+        // 输入控制
+        document.getElementById('messageInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault()
+                sendMessage()
+            }
+        })
+    </script>
+</body>
+</html>
