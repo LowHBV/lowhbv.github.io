@@ -20,7 +20,7 @@
         await pyodide.loadPackage("micropip");
 
         // 从 GitHub 仓库加载 Python 文件（需使用 raw.githubusercontent.com 的 URL）
-        const pythonUrl = "https://raw.githubusercontent.com/LowHBV/lowhbv.github.io/Apps/GithubAI手柄测试.py";
+        const pythonUrl = "https://raw.githubusercontent.com/LowHBV/lowhbv.github.io/Apps/GithubAI手柄测试Beta.py";
         const response = await fetch(pythonUrl);
         const pythonCode = await response.text();
 
