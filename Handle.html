@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Python on GitHub Pages</title>
+  <script src="https://cdn.jsdelivr.net/pyodide/v0.21.3/full/pyodide.js"></script>
+</head>
+<body>
+  <h1>浏览器中运行 Python 代码</h1>
+  <button onclick="runPython()">点击运行Python</button>
+  <div id="output" style="margin-top: 20px; color: blue;"></div>
+
+  <script>
+    async function runPython() {
+      const outputDiv = document.getElementById("output");
+      outputDiv.innerHTML = "加载中...";
+
+      try {
+        // 初始化 Pyodide
+        let pyodide = await loadPyodide();
+        await pyodide.loadPackage("micropip");
+
+        // 从 GitHub 仓库加载 Python 文件（需使用 raw.githubusercontent.com 的 URL）
+        const pythonUrl = "https://raw.githubusercontent.com/LowHBV/lowhbv.github.io/GithubAI 手柄控制.py";
+        const response = await fetch(pythonUrl);
+        const pythonCode = await response.text();
+
+        // 执行 Python 代码
+        await pyodide.runPythonAsync(pythonCode);
+      } catch (error) {
+        outputDiv.innerHTML = `错误: ${error.message}`;
+      }
+    }
+  </script>
+</body>
+</html>
