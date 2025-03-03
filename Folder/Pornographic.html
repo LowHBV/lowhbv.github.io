@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+    <meta charset="UTF-8">
+    <title>MainList</title>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+    <style>
+        :root {
+            --bg-light: #fff0f5;
+            --text-light: #8b0000;
+            --border-light: rgba(255,105,180,0.2);
+            --list-width: 380px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        }
+
+        body {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #ff69b4 0%, #ff1493 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 15px;
+        }
+
+        .container {
+            display: flex;
+            gap: 2rem;
+            width: 100%;
+            max-width: 1400px;
+            position: relative;
+            z-index: 1;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .list-container {
+            flex: 0 0 var(--list-width);
+            background: rgba(255, 192, 203, 0.2);
+            border: 1px solid #ff69b4;
+            border-radius: 12px;
+            padding: 1.5rem;
+            transition: all 0.3s cubic-bezier(0.16, 0.71, 0.29, 0.99);
+            backdrop-filter: blur(20px);
+            min-height: 600px;
+            opacity: 1;
+            box-shadow: 0 8px 32px rgba(255,105,180,0.2);
+        }
+
+        .list-container.collapsed {
+            flex: 0 0 60px;
+            min-height: auto;
+            overflow: hidden;
+            opacity: 0.6;
+            padding: 1rem 0;
+        }
+
+        .list-container.collapsed h2,
+        .list-container.collapsed .list,
+        .list-container.collapsed .file-controls {
+            display: none;
+        }
+
+        h2 {
+            color: #ff0066;
+            margin-bottom: 1rem;
+            font-size: 1.4rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid #ff1493;
+        }
+
+        .list {
+            list-style: none;
+            min-height: 500px;
+            padding: 0.5rem;
+            margin: 0;
+        }
+
+        .list-item {
+            position: relative;
+            background: rgba(255, 105, 180, 0.3);
+            margin-bottom: 0.8rem;
+            border-radius: 6px;
+            transition: all 0.25s ease-out;
+            border: 1px solid #ff1493;
+        }
+
+        .list-item:hover {
+            transform: translateX(6px);
+            z-index: 1001;
+            box-shadow: 4px 4px 12px rgba(255,20,147,0.3);
+        }
+
+        .list-item a {
+            display: block;
+            padding: 0.9rem 40px 0.9rem 0.9rem;
+            color: #8b0000;
+            font-size: 0.95rem;
+            text-decoration: none;
+            position: relative;
+        }
+
+        .tooltip {
+            display: none;
+            position: absolute;
+            bottom: calc(100% + 10px);
+            left: 50%;
+            transform: translateX(-50%);
+            background: #ff69b4;
+            color: #8b0000;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            min-width: 120px;
+            max-width: 300px;
+            border: 1px solid #ff1493;
+            box-shadow: 0 12px 32px rgba(255,20,147,0.2);
+            line-height: 1.4;
+            z-index: 1000;
+            pointer-events: none;
+            animation: fadeInTop 0.25s cubic-bezier(0.23, 1, 0.32, 1);
+            white-space: normal;
+            text-align: center;
+        }
+
+        @keyframes fadeInTop {
+            from { opacity: 0; transform: translateX(-50%) translateY(8px); }
+            to { opacity: 1; transform: translateX(-50%) translateY(0); }
+        }
+
+        .list-item:hover .tooltip {
+            display: block;
+        }
+
+        .delete-btn {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: #ff0000;
+            color: white;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            opacity: 0;
+            transition: all 0.2s ease;
+        }
+
+        .list-item:hover .delete-btn {
+            opacity: 1;
+        }
+
+        .delete-btn:hover {
+            background: #cc0000;
+            transform: translateY(-50%) scale(1.1);
+        }
+
+        .toggle-btn {
+            padding: 10px 16px;
+            border-radius: 8px;
+            border: 1px solid #ff1493;
+            cursor: pointer;
+            background: rgba(255, 105, 180, 0.3);
+            color: #8b0000;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .toggle-btn:hover {
+            background: rgba(255,20,147,0.4);
+            transform: translateX(-5px);
+            box-shadow: 0 4px 16px rgba(255,105,180,0.3);
+        }
+
+        [data-theme="light"] {
+            background: linear-gradient(135deg, #ffe6e6 0%, #ffb3d9 100%);
+        }
+
+        [data-theme="light"] .list-container {
+            background: rgba(255, 228, 225, 0.95);
+            border-color: #ff69b4;
+        }
+
+        [data-theme="light"] h2 {
+            color: #ff0066;
+            border-bottom-color: #ff1493;
+        }
+
+        [data-theme="light"] .list-item {
+            background: rgba(255, 182, 193, 0.3);
+            border-color: #ff69b4;
+        }
+
+        [data-theme="light"] .list-item a {
+            color: #8b0000;
+        }
+
+        @media (max-width: 640px) {
+            .container {
+                flex-direction: column;
+                max-width: 400px;
+                gap: 1.5rem;
+            }
+            .list-container {
+                padding: 1.2rem;
+                min-height: auto;
+            }
+            .tooltip {
+                display: none !important;
+            }
+            .delete-btn {
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+<body>
+<button onclick="toggleTheme()" style="
+        position: fixed;
+        top: 15px;
+        right: 15px;
+        padding: 6px 10px;
+        font-size: 0.9rem;
+        border-radius: 6px;
+        background: rgba(255,105,180,0.3);
+        border: 1px solid #ff1493;
+        color: #8b0000;
+        cursor: pointer;
+        backdrop-filter: blur(10px);
+    ">
+    🌓 主题
+</button>
+
+<div class="container">
+    <div class="list-container" id="project-list-container">
+        <h2>📁 项目</h2>
+        <ul id="project-list" class="list">
+            <li class="list-item"><a href="https://www.pornhub.com/"><img src="Logo/PornHubLogo.png" style="width: 7%; height: 7%;"> PornHub[VPN]
+                <div class="tooltip">加拿大色情网站，世界最大色情网站，内涵多种分类，适合欧美 亚洲 非洲用户</div>
+            </a></li>
+            <li class="list-item"><a href="https://https://cn1.91-av.com//"> CN 91AV
+                <div class="tooltip">中国最大网红色情网站，适合中国人，更符合亚洲人口味</div>
+            </a></li>
+        </ul>
+    </div>
+</div>
+
+<script>
+    // 拖拽功能
+    const commonConfig = {
+        animation: 180,
+        ghostClass: 'ghost',
+        dragClass: 'dragging',
+        group: 'shared',
+        swapThreshold: 0.6
+    };
+
+    document.querySelectorAll('.list').forEach(list => {
+        new Sortable(list, {
+            ...commonConfig,
+            handle: '.list-item',
+            onStart: (e) => e.item.classList.add('dragging'),
+            onEnd: (e) => e.item.classList.remove('dragging')
+        });
+    });
+
+    // 主题切换
+    function toggleTheme() {
+        document.documentElement.toggleAttribute('data-theme');
+    }
+</script>
+</body>
+</html>
