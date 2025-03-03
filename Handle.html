@@ -1,113 +1,217 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>浏览器手柄检测</title>
+    <title>浏览器手柄检测器</title>
     <script src="https://cdn.jsdelivr.net/pyodide/v0.21.3/full/pyodide.js"></script>
     <style>
-        #gamepad-container { padding: 20px; }
-        .stick-box { 
-            display: inline-block;
-            margin: 10px;
-            border: 2px solid white;
-            padding: 10px;
+        body {
+            background: #1a1a1a;
+            color: white;
+            font-family: Arial, sans-serif;
+            margin: 20px;
         }
-        canvas { border: 1px solid #ccc; }
+        #gamepad-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .status-box {
+            background: #333;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+        .stick-container {
+            display: flex;
+            gap: 20px;
+            margin: 20px 0;
+        }
+        canvas {
+            background: #222;
+            border-radius: 10px;
+        }
+        button {
+            background: #4CAF50;
+            border: none;
+            padding: 10px 20px;
+            color: white;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        #button-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .button-item {
+            background: #444;
+            padding: 10px;
+            border-radius: 5px;
+            text-align: center;
+        }
+        .button-active {
+            background: #4CAF50 !important;
+        }
     </style>
 </head>
 <body>
     <div id="gamepad-container">
-        <button onclick="startDetection()">连接手柄</button>
-        <div id="output"></div>
-        <div id="sticks">
-            <div class="stick-box">
+        <div class="status-box">
+            <h2>手柄状态检测器</h2>
+            <button onclick="startDetection()">点击连接手柄</button>
+            <p id="connection-status">未检测到手柄</p>
+        </div>
+        
+        <div class="stick-container">
+            <div>
                 <canvas id="left-stick" width="200" height="200"></canvas>
-                <div>左摇杆</div>
+                <p>左摇杆</p>
             </div>
-            <div class="stick-box">
+            <div>
                 <canvas id="right-stick" width="200" height="200"></canvas>
-                <div>右摇杆</div>
+                <p>右摇杆</p>
             </div>
+        </div>
+
+        <div class="status-box">
+            <h3>按钮状态</h3>
+            <div id="button-grid"></div>
         </div>
     </div>
 
 <script>
 let pyodide;
-let animationFrameId;
+let isRunning = false;
 
-// 初始化 Pyodide
 async function initializePyodide() {
     pyodide = await loadPyodide({
         indexURL: "https://cdn.jsdelivr.net/pyodide/v0.21.3/full/",
     });
 }
 
-// 启动检测
 async function startDetection() {
-    if (!navigator.getGamepads) {
-        alert("浏览器不支持 Gamepad API");
-        return;
-    }
+    if (isRunning) return;
+    isRunning = true;
+    
+    // 初始化按钮网格
+    initButtonGrid(16);
 
-    // 加载 Python 代码
     await pyodide.runPythonAsync(`
-        import js
-        from js import document, requestAnimationFrame
+        from js import document, navigator, requestAnimationFrame
         import math
 
-        class GamepadState:
+        class GamepadManager:
             def __init__(self):
                 self.left_stick = (0, 0)
                 self.right_stick = (0, 0)
-                self.buttons = {}
-                
-            def update(self, gamepad):
-                # 更新摇杆状态
-                self.left_stick = (gamepad.axes[0], gamepad.axes[1])
-                self.right_stick = (gamepad.axes[2], gamepad.axes[3])
-                
-                # 更新按钮状态
-                self.buttons = {
-                    i: button.pressed for i, button in enumerate(gamepad.buttons)
-                }
+                self.buttons = [False] * 16
+                self.connected = False
 
-        state = GamepadState()
+            def update(self):
+                gamepads = navigator.getGamepads()
+                if gamepads[0]:
+                    self.connected = True
+                    # 获取摇杆数据
+                    self.left_stick = (gamepads[0].axes[0], gamepads[0].axes[1])
+                    self.right_stick = (gamepads[0].axes[2], gamepads[0].axes[3])
+                    # 获取按钮数据
+                    self.buttons = [btn.pressed for btn in gamepads[0].buttons]
+                else:
+                    self.connected = False
+
+        manager = GamepadManager()
 
         def draw_stick(ctx, center, pos):
+            # 清除画布
             ctx.clearRect(0, 0, 200, 200)
+            
+            # 绘制背景圆
             ctx.beginPath()
             ctx.arc(center[0], center[1], 80, 0, 2 * math.pi)
-            ctx.strokeStyle = "#fff"
+            ctx.strokeStyle = "#666"
+            ctx.lineWidth = 2
             ctx.stroke()
             
+            # 绘制摇杆位置
             x = center[0] + pos[0] * 80
             y = center[1] + pos[1] * 80
             ctx.beginPath()
-            ctx.arc(x, y, 10, 0, 2 * math.pi)
-            ctx.fillStyle = "#0f0"
+            ctx.arc(x, y, 12, 0, 2 * math.pi)
+            ctx.fillStyle = "#4CAF50"
             ctx.fill()
+            
+            # 绘制中心线
+            ctx.beginPath()
+            ctx.moveTo(center[0] - 80, center[1])
+            ctx.lineTo(center[0] + 80, center[1])
+            ctx.moveTo(center[0], center[1] - 80)
+            ctx.lineTo(center[0], center[1] + 80)
+            ctx.strokeStyle = "#444"
+            ctx.setLineDash([5, 5])
+            ctx.stroke()
 
         def update_display():
-            gamepads = navigator.getGamepads()
-            if gamepads[0]:
-                state.update(gamepads[0])
+            try:
+                manager.update()
                 
-                # 绘制摇杆
+                # 更新连接状态
+                status = document.getElementById("connection-status")
+                status.textContent = "已连接: " + ("是" if manager.connected else "否")
+                status.style.color = "#4CAF50" if manager.connected else "#ff4444"
+                
+                # 获取画布上下文
                 left_ctx = document.getElementById("left-stick").getContext("2d")
                 right_ctx = document.getElementById("right-stick").getContext("2d")
-                draw_stick(left_ctx, (100, 100), state.left_stick)
-                draw_stick(right_ctx, (100, 100), state.right_stick)
                 
-            requestAnimationFrame(update_display)
+                # 绘制摇杆
+                draw_stick(left_ctx, (100, 100), manager.left_stick)
+                draw_stick(right_ctx, (100, 100), manager.right_stick)
+                
+                # 更新按钮状态
+                for i in range(len(manager.buttons)):
+                    btn = document.getElementById("btn-" + str(i))
+                    if manager.buttons[i]:
+                        btn.classList.add("button-active")
+                    else:
+                        btn.classList.remove("button-active")
+                
+                requestAnimationFrame(update_display)
+            except Exception as e:
+                print("更新错误:", e)
 
-        # 开始循环
+        # 启动更新循环
         update_display()
     `);
 }
 
-// 初始化
+function initButtonGrid(count) {
+    const grid = document.getElementById("button-grid");
+    grid.innerHTML = "";
+    for (let i = 0; i < count; i++) {
+        const div = document.createElement("div");
+        div.className = "button-item";
+        div.id = "btn-" + i;
+        div.textContent = `按钮 ${i}`;
+        grid.appendChild(div);
+    }
+}
+
 window.addEventListener('load', async () => {
     await initializePyodide();
-    document.getElementById('output').innerHTML = "Pyodide 加载完成！";
+    
+    // 自动检测手柄连接
+    window.addEventListener("gamepadconnected", (e) => {
+        console.log("手柄已连接:", e.gamepad.id);
+        if (!isRunning) startDetection();
+    });
+    
+    window.addEventListener("gamepaddisconnected", (e) => {
+        console.log("手柄已断开");
+        document.getElementById("connection-status").textContent = "未检测到手柄";
+    });
 });
 </script>
 </body>
