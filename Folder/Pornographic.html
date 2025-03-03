@@ -40,30 +40,101 @@
         }
 
         .list-container {
+            position: relative;
             flex: 0 0 var(--list-width);
             background: rgba(255, 192, 203, 0.2);
             border: 1px solid #ff69b4;
             border-radius: 12px;
             padding: 1.5rem;
             transition: all 0.3s cubic-bezier(0.16, 0.71, 0.29, 0.99);
-            backdrop-filter: blur(20px);
             min-height: 600px;
             opacity: 1;
             box-shadow: 0 8px 32px rgba(255,105,180,0.2);
         }
 
+        /* 修复后的模糊覆盖层 */
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 192, 203, 0.15);
+            backdrop-filter: blur(25px) brightness(1.1);
+            -webkit-backdrop-filter: blur(25px) brightness(1.1);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            border-radius: 12px;
+            box-shadow: 
+                inset 0 0 25px rgba(255,105,180,0.2),
+                0 0 30px rgba(255,105,180,0.3);
+            transform: translateZ(0); /* 强制硬件加速 */
+        }
+
+        .login-box {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 2rem;
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(255, 105, 180, 0.3);
+            width: 280px;
+            text-align: center;
+            border: 2px solid rgba(255,20,147,0.2);
+            transform: translateZ(0); /* 同步硬件加速 */
+        }
+
+        .login-box h2 {
+            color: #ff0066;
+            margin-bottom: 1.5rem;
+        }
+
+        .login-input {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            border: 2px solid #ff69b4;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .login-input:focus {
+            outline: none;
+            border-color: #ff1493;
+            box-shadow: 0 0 8px rgba(255, 20, 147, 0.3);
+        }
+
+        .login-btn {
+            background: #ff69b4;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            margin-top: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .login-btn:hover {
+            background: #ff1493;
+            transform: translateY(-2px);
+        }
+
+        .error-msg {
+            color: #ff0000;
+            margin-top: 1rem;
+            display: none;
+        }
+
+        /* 原始样式保持 */
         .list-container.collapsed {
             flex: 0 0 60px;
             min-height: auto;
             overflow: hidden;
             opacity: 0.6;
             padding: 1rem 0;
-        }
-
-        .list-container.collapsed h2,
-        .list-container.collapsed .list,
-        .list-container.collapsed .file-controls {
-            display: none;
         }
 
         h2 {
@@ -178,12 +249,6 @@
             backdrop-filter: blur(10px);
         }
 
-        .toggle-btn:hover {
-            background: rgba(255,20,147,0.4);
-            transform: translateX(-5px);
-            box-shadow: 0 4px 16px rgba(255,105,180,0.3);
-        }
-
         [data-theme="light"] {
             background: linear-gradient(135deg, #ffe6e6 0%, #ffb3d9 100%);
         }
@@ -191,20 +256,6 @@
         [data-theme="light"] .list-container {
             background: rgba(255, 228, 225, 0.95);
             border-color: #ff69b4;
-        }
-
-        [data-theme="light"] h2 {
-            color: #ff0066;
-            border-bottom-color: #ff1493;
-        }
-
-        [data-theme="light"] .list-item {
-            background: rgba(255, 182, 193, 0.3);
-            border-color: #ff69b4;
-        }
-
-        [data-theme="light"] .list-item a {
-            color: #8b0000;
         }
 
         @media (max-width: 640px) {
@@ -224,6 +275,60 @@
                 opacity: 1;
             }
         }
+        /* 新增动画关键帧 */
+@keyframes blurFadeIn {
+    from {
+        backdrop-filter: blur(40px) brightness(0.8);
+        -webkit-backdrop-filter: blur(40px) brightness(0.8);
+        opacity: 0;
+    }
+    to {
+        backdrop-filter: blur(25px) brightness(1.1);
+        -webkit-backdrop-filter: blur(25px) brightness(1.1);
+        opacity: 1;
+    }
+}
+
+@keyframes blurFadeOut {
+    from {
+        backdrop-filter: blur(25px) brightness(1.1);
+        -webkit-backdrop-filter: blur(25px) brightness(1.1);
+        opacity: 1;
+    }
+    to {
+        backdrop-filter: blur(0) brightness(1);
+        -webkit-backdrop-filter: blur(0) brightness(1);
+        opacity: 0;
+    }
+}
+
+.overlay {
+    /* ...其他样式保持不变... */
+    animation: blurFadeIn 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.overlay.fade-out {
+    animation: blurFadeOut 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    pointer-events: none;
+}
+
+.login-box {
+    /* 添加入场动画 */
+    animation: loginSlideIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    opacity: 0;
+    transform: translateY(20px);
+}
+
+@keyframes loginSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
     </style>
 </head>
 <body>
@@ -245,19 +350,54 @@
 
 <div class="container">
     <div class="list-container" id="project-list-container">
+        <div class="overlay" id="loginOverlay">
+            <div class="login-box">
+                <h2>🔒 登录访问</h2>
+                <form id="loginForm">
+                    <input type="text" class="login-input" id="username" placeholder="用户名" required>
+                    <input type="password" class="login-input" id="password" placeholder="密码" required>
+                    <button type="submit" class="login-btn">登录</button>
+                </form>
+                <div class="error-msg" id="errorMsg">用户名或密码错误！</div>
+            </div>
+        </div>
+
         <h2>📁 项目</h2>
         <ul id="project-list" class="list">
             <li class="list-item"><a href="https://www.pornhub.com/"><img src="Logo/PornHubLogo.png" style="width: 7%; height: 7%;"> PornHub[VPN]
                 <div class="tooltip">加拿大色情网站，世界最大色情网站，内涵多种分类，适合欧美 亚洲 非洲用户</div>
             </a></li>
-            <li class="list-item"><a href="https://https://cn1.91-av.com//"> CN 91AV
+            <li class="list-item"><a href="https://https://cn1.91-av.com"> CN 91AV
                 <div class="tooltip">中国最大网红色情网站，适合中国人，更符合亚洲人口味</div>
+            </a></li>
+            <li class="list-item"><a href="SQwer.html"> LowGBV自营[暂未开始]
+                <div class="tooltip">站内更安全，LowHBV精选，质量更过关</div>
             </a></li>
         </ul>
     </div>
 </div>
 
 <script>
+    // 登录功能
+    const loginOverlay = document.getElementById('loginOverlay');
+    const loginForm = document.getElementById('loginForm');
+    const errorMsg = document.getElementById('errorMsg');
+
+    loginForm.addEventListener('submit', function(e) {
+    e.preventDefault();
+    const username = document.getElementById('username').value;
+    const password = document.getElementById('password').value;
+
+    if (username === 'LowHBV' && password === 'Admin') {
+        loginOverlay.classList.add('fade-out');
+        loginOverlay.addEventListener('animationend', () => {
+            loginOverlay.remove();
+        }, {once: true});
+    } else {
+        // 错误处理保持不变...
+    }
+});
+
     // 拖拽功能
     const commonConfig = {
         animation: 180,
