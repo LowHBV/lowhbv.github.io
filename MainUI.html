@@ -288,7 +288,7 @@
 <div class="control-buttons">
     <button class="toggle-btn" onclick="toggleList('project')">📁 项目列表</button>
     <button class="toggle-btn" onclick="toggleList('login')">🔐 登录列表</button>
-    <button class="toggle-btn" onclick="toggleList('local')">📂 本地文件</button>
+    <button class="toggle-btn" onclick="toggleList('local')">📂 文件夹</button>
 </div>
 
 <div class="container">
@@ -361,7 +361,7 @@
         </ul>
     </div>
 
-    <div class="list-container" id="local-list-container">
+    <<div class="list-container" id="local-list-container">
         <h2>📂 文件夹</h2>
         <div class="file-controls">
             <input type="file" id="file-input" accept=".html" hidden multiple>
@@ -370,10 +370,13 @@
                 ＋ 添加HTML文件
             </button>
         </div>
-        <ul id="local-list" class="list"></ul>
+        <ul id="local-list" class="list">
+            <!-- 将原本在ul外部的li移到ul内部 -->
+            <li class="list-item"><a href="Folder/Pornographic.html">💕 {Plug-in}色情网站
+                <div class="tooltip">内置大量色情网站，包含中国、日本、韩国、欧美等，满足您的口味</div>
+            </a></li>
+        </ul>
     </div>
-</div>
-
 <script>
     // 拖拽功能
     const commonConfig = {
