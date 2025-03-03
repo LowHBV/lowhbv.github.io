@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>浏览器手柄检测</title>
+    <script src="https://cdn.jsdelivr.net/pyodide/v0.21.3/full/pyodide.js"></script>
+    <style>
+        #gamepad-container { padding: 20px; }
+        .stick-box { 
+            display: inline-block;
+            margin: 10px;
+            border: 2px solid white;
+            padding: 10px;
+        }
+        canvas { border: 1px solid #ccc; }
+    </style>
+</head>
+<body>
+    <div id="gamepad-container">
+        <button onclick="startDetection()">连接手柄</button>
+        <div id="output"></div>
+        <div id="sticks">
+            <div class="stick-box">
+                <canvas id="left-stick" width="200" height="200"></canvas>
+                <div>左摇杆</div>
+            </div>
+            <div class="stick-box">
+                <canvas id="right-stick" width="200" height="200"></canvas>
+                <div>右摇杆</div>
+            </div>
+        </div>
+    </div>
+
+<script>
+let pyodide;
+let animationFrameId;
+
+// 初始化 Pyodide
+async function initializePyodide() {
+    pyodide = await loadPyodide({
+        indexURL: "https://cdn.jsdelivr.net/pyodide/v0.21.3/full/",
+    });
+}
+
+// 启动检测
+async function startDetection() {
+    if (!navigator.getGamepads) {
+        alert("浏览器不支持 Gamepad API");
+        return;
+    }
+
+    // 加载 Python 代码
+    await pyodide.runPythonAsync(`
+        import js
+        from js import document, requestAnimationFrame
+        import math
+
+        class GamepadState:
+            def __init__(self):
+                self.left_stick = (0, 0)
+                self.right_stick = (0, 0)
+                self.buttons = {}
+                
+            def update(self, gamepad):
+                # 更新摇杆状态
+                self.left_stick = (gamepad.axes[0], gamepad.axes[1])
+                self.right_stick = (gamepad.axes[2], gamepad.axes[3])
+                
+                # 更新按钮状态
+                self.buttons = {
+                    i: button.pressed for i, button in enumerate(gamepad.buttons)
+                }
+
+        state = GamepadState()
+
+        def draw_stick(ctx, center, pos):
+            ctx.clearRect(0, 0, 200, 200)
+            ctx.beginPath()
+            ctx.arc(center[0], center[1], 80, 0, 2 * math.pi)
+            ctx.strokeStyle = "#fff"
+            ctx.stroke()
+            
+            x = center[0] + pos[0] * 80
+            y = center[1] + pos[1] * 80
+            ctx.beginPath()
+            ctx.arc(x, y, 10, 0, 2 * math.pi)
+            ctx.fillStyle = "#0f0"
+            ctx.fill()
+
+        def update_display():
+            gamepads = navigator.getGamepads()
+            if gamepads[0]:
+                state.update(gamepads[0])
+                
+                # 绘制摇杆
+                left_ctx = document.getElementById("left-stick").getContext("2d")
+                right_ctx = document.getElementById("right-stick").getContext("2d")
+                draw_stick(left_ctx, (100, 100), state.left_stick)
+                draw_stick(right_ctx, (100, 100), state.right_stick)
+                
+            requestAnimationFrame(update_display)
+
+        # 开始循环
+        update_display()
+    `);
+}
+
+// 初始化
+window.addEventListener('load', async () => {
+    await initializePyodide();
+    document.getElementById('output').innerHTML = "Pyodide 加载完成！";
+});
+</script>
+</body>
+</html>
